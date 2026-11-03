@@ -31,7 +31,15 @@ def test_analyze_domain_traffic():
     assert res.domain == "github.com"
     assert res.total_visits > 0
     assert len(res.monthly_history) == 6
-    assert len(res.top_countries) > 0
+    assert len(res.top_countries) == 10
+    assert res.device_split.desktop > 0
+    assert res.device_split.mobile > 0
+    assert len(res.top_organic_keywords) > 0
+    assert len(res.referring_domains) > 0
+    assert len(res.outgoing_domains) > 0
+    assert len(res.subdomains) > 0
+    assert len(res.competitor_matrix) > 0
+    assert res.audience_demographics.gender["male"] > 0
     assert res.confidence.confidence_score >= 80
 
 def test_newly_launched_domain():
@@ -47,6 +55,12 @@ def test_newly_launched_domain():
 def test_analyze_keyword():
     res = asyncio.run(analyze_keyword("artificial intelligence"))
     assert res.query == "artificial intelligence"
+    assert res.global_volume > 0
+    assert len(res.country_volumes) > 0
+    assert len(res.serp_features) == 8
+    assert len(res.top_serp_results) == 10
+    assert len(res.variations.broad_match) > 0
+    assert res.click_potential.organic_clicks > 0
     assert len(res.interest_over_time) == 12
     assert len(res.questions) > 0
     assert res.confidence.confidence_score >= 80
@@ -56,6 +70,11 @@ def test_analyze_social():
     assert res.subscriber_count > 0
     assert res.grade in ["A++", "A+", "A", "A-", "B+"]
     assert res.monthly_earnings_min >= 0
+    assert len(res.daily_growth_history) == 14
+    assert len(res.milestone_projections) == 6
+    assert len(res.top_videos) > 0
+    assert len(res.social_footprint) > 0
+    assert len(res.seo_checklist) == 6
 
 def test_analyze_audience():
     res = asyncio.run(analyze_audience("ecommerce"))
@@ -63,3 +82,8 @@ def test_analyze_audience():
     assert res.sentiment.positive > 0
     assert len(res.platforms) > 0
     assert len(res.top_communities) > 0
+    assert len(res.media_consumption.top_websites) > 0
+    assert len(res.media_consumption.top_podcasts) > 0
+    assert len(res.extended_demographics.education_levels) > 0
+    assert len(res.pain_points) > 0
+    assert len(res.top_hashtags) > 0
