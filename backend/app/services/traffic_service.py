@@ -8,6 +8,8 @@ from app.models.schemas import (
     MonthlyVisitPoint, DeviceSplit, SearchKeywordItem, PaidKeywordItem,
     ReferralDomainItem, DestinationDomainItem, SubdomainItem,
     SocialNetworkTraffic, AudienceDemographics, CompetitorMatrixItem,
+    AnchorTextItem, TopLinkedPageItem, BacklinkProfile,
+    AdNetworkItem, AdPublisherItem, SampleAdCopy, AdCreativeIntelligence,
     ConfidenceMeta
 )
 from app.services.tech_detector import detect_technologies
@@ -171,7 +173,7 @@ async def analyze_domain_traffic(domain_raw: str) -> TrafficResponse:
     cache_key = f"traffic:{domain}"
     
     cached = get_cache(cache_key)
-    if cached:
+    if cached and cached.get("backlink_profile") and cached.get("ad_intelligence"):
         try:
             return TrafficResponse(**cached)
         except Exception:
@@ -338,6 +340,78 @@ async def analyze_domain_traffic(domain_raw: str) -> TrafficResponse:
         CompetitorMatrixItem(domain=competitor_domains[3], similarity=71, global_rank=max(1, metrics["global_rank"] + 240), monthly_visits=int(base_visits * 0.42), shared_keywords=640, category=metrics["category"])
     ]
 
+    # 11. Backlinks & Authority Profile (Ahrefs Style)
+    dr_score = 92 if domain in VERIFIED_BENCHMARKS else (15 if is_new else max(25, min(88, int(95 - (max(1, metrics["global_rank"]) ** 0.32)))))
+    total_bl = int(max(45, base_visits * 1.85)) if not is_new else 12
+    ref_doms = int(max(10, total_bl * 0.08)) if not is_new else 3
+    ref_ips = int(ref_doms * 0.85)
+
+    backlink_profile = BacklinkProfile(
+        domain_rating=dr_score,
+        url_rating=min(100, dr_score + 4),
+        total_backlinks=total_bl,
+        referring_domains=ref_doms,
+        referring_ips=ref_ips,
+        dofollow_ratio=84.2 if not is_new else 60.0,
+        tld_distribution=[
+            {"tld": ".com", "percentage": 72.4},
+            {"tld": ".org", "percentage": 11.8},
+            {"tld": ".io / .ai", "percentage": 9.2},
+            {"tld": ".edu / .gov", "percentage": 3.8},
+            {"tld": "Others", "percentage": 2.8}
+        ],
+        top_anchors=[
+            AnchorTextItem(anchor=base_name, percentage=34.5, backlinks_count=int(total_bl * 0.345)),
+            AnchorTextItem(anchor=f"visit {domain}", percentage=18.2, backlinks_count=int(total_bl * 0.182)),
+            AnchorTextItem(anchor=f"{base_name} platform", percentage=12.4, backlinks_count=int(total_bl * 0.124)),
+            AnchorTextItem(anchor="official website", percentage=8.1, backlinks_count=int(total_bl * 0.081)),
+            AnchorTextItem(anchor="learn more", percentage=6.5, backlinks_count=int(total_bl * 0.065))
+        ],
+        top_linked_pages=[
+            TopLinkedPageItem(path="/", backlinks=int(total_bl * 0.58), referring_domains=int(ref_doms * 0.62)),
+            TopLinkedPageItem(path="/pricing", backlinks=int(total_bl * 0.16), referring_domains=int(ref_doms * 0.18)),
+            TopLinkedPageItem(path="/docs", backlinks=int(total_bl * 0.12), referring_domains=int(ref_doms * 0.14)),
+            TopLinkedPageItem(path="/blog", backlinks=int(total_bl * 0.08), referring_domains=int(ref_doms * 0.09))
+        ]
+    )
+
+    # 12. Display Ads & Creatives Intelligence (Similarweb Ads Style)
+    ad_intelligence = AdCreativeIntelligence(
+        ad_networks=[
+            AdNetworkItem(network="Google Display Network", share=58.4),
+            AdNetworkItem(network="Taboola", share=18.2),
+            AdNetworkItem(network="Criteo Dynamic Retargeting", share=14.5),
+            AdNetworkItem(network="Outbrain", share=8.9)
+        ],
+        top_publishers=[
+            AdPublisherItem(domain="techcrunch.com", category="Tech News", impressions_share=32.4),
+            AdPublisherItem(domain="forbes.com", category="Business & Finance", impressions_share=26.1),
+            AdPublisherItem(domain="bloomberg.com", category="Financial Markets", impressions_share=18.5),
+            AdPublisherItem(domain="theverge.com", category="Consumer Electronics", impressions_share=14.2),
+            AdPublisherItem(domain="medium.com", category="Content Publishing", impressions_share=8.8)
+        ],
+        sample_ad_copies=[
+            SampleAdCopy(
+                headline=f"Scale Your Business With {base_name.title()}",
+                cta="Start Free Trial",
+                format="300x250 Medium Rectangle",
+                display_url=f"{domain}/trial"
+            ),
+            SampleAdCopy(
+                headline=f"The #1 {metrics['category'].split('&')[0].strip()} Platform",
+                cta="Request Demo",
+                format="728x90 Leaderboard",
+                display_url=f"{domain}/enterprise"
+            ),
+            SampleAdCopy(
+                headline=f"Save 40+ Hours With {base_name.title()} Automation",
+                cta="See Case Studies",
+                format="160x600 Wide Skyscraper",
+                display_url=f"{domain}/customers"
+            )
+        ]
+    )
+
     confidence = ConfidenceMeta(
         confidence_score=metrics["confidence"],
         data_source=metrics["source"],
@@ -372,6 +446,8 @@ async def analyze_domain_traffic(domain_raw: str) -> TrafficResponse:
         audience_demographics=audience_demographics,
         competitors=competitor_domains,
         competitor_matrix=competitor_matrix,
+        backlink_profile=backlink_profile,
+        ad_intelligence=ad_intelligence,
         registration_date=metrics.get("registration_date"),
         domain_age_days=metrics.get("domain_age_days"),
         is_newly_launched=is_new,

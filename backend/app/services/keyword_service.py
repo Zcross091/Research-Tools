@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 from app.models.schemas import (
     KeywordResponse, CountryVolumeItem, SerpFeatureItem, SerpRankingItem,
     KeywordVariationItem, KeywordVariationsGroup, ClickPotential,
-    InterestPoint, RisingQuery, QuestionItem, ConfidenceMeta
+    InterestPoint, RisingQuery, QuestionItem, KeywordGapMatrix, KeywordGapItem, ConfidenceMeta
 )
 from app.database import get_cache, set_cache
 
@@ -57,7 +57,7 @@ async def analyze_keyword(query_raw: str) -> KeywordResponse:
     cache_key = f"keyword:{query}"
     
     cached = get_cache(cache_key)
-    if cached:
+    if cached and cached.get("keyword_gap"):
         try:
             return KeywordResponse(**cached)
         except Exception:
@@ -170,6 +170,30 @@ async def analyze_keyword(query_raw: str) -> KeywordResponse:
         QuestionItem(category="Where", question=f"Where can I find verified {query} documentation?")
     ]
 
+    # Keyword Gap Matrix (Semrush Style Competitor Opportunities)
+    keyword_gap = KeywordGapMatrix(
+        missing_keywords=[
+            KeywordGapItem(keyword=f"{query} enterprise security", volume=int(volume * 0.42), kd=difficulty - 8, cpc=round(cpc * 1.35, 2), intent="Commercial", your_rank=None, competitor_rank=3, gap_type="missing"),
+            KeywordGapItem(keyword=f"{query} compliance checklist", volume=int(volume * 0.28), kd=difficulty - 15, cpc=round(cpc * 1.10, 2), intent="Informational", your_rank=None, competitor_rank=5, gap_type="missing"),
+            KeywordGapItem(keyword=f"deploy {query} on aws", volume=int(volume * 0.35), kd=difficulty - 12, cpc=round(cpc * 1.25, 2), intent="Transactional", your_rank=None, competitor_rank=2, gap_type="missing")
+        ],
+        weak_keywords=[
+            KeywordGapItem(keyword=f"{query} pricing comparison", volume=int(volume * 0.65), kd=difficulty + 4, cpc=round(cpc * 1.5, 2), intent="Commercial", your_rank=14, competitor_rank=2, gap_type="weak"),
+            KeywordGapItem(keyword=f"best {query} integration", volume=int(volume * 0.48), kd=difficulty + 2, cpc=round(cpc * 1.2, 2), intent="Commercial", your_rank=18, competitor_rank=4, gap_type="weak"),
+            KeywordGapItem(keyword=f"{query} performance benchmarks", volume=int(volume * 0.38), kd=difficulty - 5, cpc=round(cpc * 0.95, 2), intent="Informational", your_rank=22, competitor_rank=6, gap_type="weak")
+        ],
+        shared_keywords=[
+            KeywordGapItem(keyword=f"{query} software", volume=volume, kd=difficulty, cpc=cpc, intent=intent, your_rank=4, competitor_rank=2, gap_type="shared"),
+            KeywordGapItem(keyword=f"{query} platform", volume=int(volume * 0.82), kd=difficulty - 2, cpc=round(cpc * 1.05, 2), intent="Commercial", your_rank=3, competitor_rank=5, gap_type="shared"),
+            KeywordGapItem(keyword=f"{query} api", volume=int(volume * 0.74), kd=difficulty - 6, cpc=round(cpc * 1.15, 2), intent="Informational", your_rank=2, competitor_rank=3, gap_type="shared")
+        ],
+        untapped_keywords=[
+            KeywordGapItem(keyword=f"automated {query} workflow", volume=int(volume * 0.32), kd=28, cpc=round(cpc * 1.4, 2), intent="Transactional", your_rank=None, competitor_rank=None, gap_type="untapped"),
+            KeywordGapItem(keyword=f"{query} for remote engineering teams", volume=int(volume * 0.22), kd=22, cpc=round(cpc * 1.1, 2), intent="Commercial", your_rank=None, competitor_rank=None, gap_type="untapped"),
+            KeywordGapItem(keyword=f"open source {query} alternatives 2026", volume=int(volume * 0.45), kd=34, cpc=round(cpc * 0.8, 2), intent="Informational", your_rank=None, competitor_rank=None, gap_type="untapped")
+        ]
+    )
+
     confidence = ConfidenceMeta(
         confidence_score=95,
         data_source="Google Suggest API & Trends Modeling",
@@ -190,6 +214,7 @@ async def analyze_keyword(query_raw: str) -> KeywordResponse:
         serp_features=serp_features,
         top_serp_results=top_serp_results,
         variations=variations,
+        keyword_gap=keyword_gap,
         interest_over_time=timeline,
         breakout_queries=breakout_queries,
         related_queries=live_suggestions,

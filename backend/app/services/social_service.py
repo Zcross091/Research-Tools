@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from app.models.schemas import (
     SocialResponse, VideoSEOAnalysis, DailyGrowthItem,
     MilestoneProjectionItem, TopVideoItem, SocialFootprintItem,
-    SeoChecklistItem, ConfidenceMeta
+    SeoChecklistItem, CreatorOverlapItem, UploadScheduleItem, ConfidenceMeta
 )
 from app.database import get_cache, set_cache
 
@@ -76,7 +76,7 @@ async def analyze_creator(query_raw: str) -> SocialResponse:
     cache_key = f"social:{query}"
     
     cached = get_cache(cache_key)
-    if cached:
+    if cached and cached.get("audience_overlap") and cached.get("upload_schedule"):
         try:
             return SocialResponse(**cached)
         except Exception:
@@ -178,6 +178,22 @@ async def analyze_creator(query_raw: str) -> SocialResponse:
         SeoChecklistItem(item="Pinned Comment With Call to Action", passed=True, score=90, tip="Community engagement pinned within the first 60 minutes")
     ]
 
+    # 6. Audience Overlap (Channels this audience also watches)
+    audience_overlap = [
+        CreatorOverlapItem(handle="@mkbhd", title="Marques Brownlee", overlap_score=78, subscriber_count=19_400_000, shared_topics=["Smartphones", "Clean Setups", "AI Hardware"]),
+        CreatorOverlapItem(handle="@veritasium", title="Veritasium", overlap_score=64, subscriber_count=16_400_000, shared_topics=["Physics", "Deep Dives", "Engineering Breakthroughs"]),
+        CreatorOverlapItem(handle="@fireship", title="Fireship", overlap_score=59, subscriber_count=3_550_000, shared_topics=["Software Engineering", "Tech News in 100s", "Web Dev"]),
+        CreatorOverlapItem(handle="@lexfridman", title="Lex Fridman", overlap_score=52, subscriber_count=4_200_000, shared_topics=["AI Research", "Long-form Interviews", "Philosophy & Science"])
+    ]
+
+    # 7. Optimal Upload Timing Schedule
+    upload_schedule = UploadScheduleItem(
+        best_day="Wednesday & Saturday",
+        best_time="2:00 PM - 5:00 PM EST",
+        peak_velocity_window="First 180 Minutes (Peak VPH)",
+        consistency_score=94
+    )
+
     confidence = ConfidenceMeta(
         confidence_score=94,
         data_source="YouTube Public Feed & SocialBlade Modeling",
@@ -205,6 +221,8 @@ async def analyze_creator(query_raw: str) -> SocialResponse:
         top_videos=top_videos,
         social_footprint=social_footprint,
         seo_checklist=seo_checklist,
+        audience_overlap=audience_overlap,
+        upload_schedule=upload_schedule,
         sample_tags=sample_tags,
         video_analysis=video_analysis,
         confidence=confidence

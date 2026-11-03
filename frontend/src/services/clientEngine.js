@@ -248,6 +248,78 @@ export async function analyzeTrafficClient(domain) {
     { category: 'Infrastructure', name: 'Vercel / AWS CloudFront', details: 'Edge compute serverless' },
   ];
 
+  // Backlink & Authority Profile (Ahrefs Style)
+  const drScore = isNewlyLaunched ? 15 : Math.max(25, Math.min(92, Math.round(95 - Math.pow(Math.max(1, globalRank), 0.32))));
+  const totalBl = isNewlyLaunched ? 12 : Math.max(45, Math.round(baseVisits * 1.85));
+  const refDoms = isNewlyLaunched ? 3 : Math.max(10, Math.round(totalBl * 0.08));
+  const refIps = Math.round(refDoms * 0.85);
+
+  const backlinkProfile = {
+    domain_rating: drScore,
+    url_rating: Math.min(100, drScore + 4),
+    total_backlinks: totalBl,
+    referring_domains: refDoms,
+    referring_ips: refIps,
+    dofollow_ratio: isNewlyLaunched ? 60.0 : 84.2,
+    tld_distribution: [
+      { tld: '.com', percentage: 72.4 },
+      { tld: '.org', percentage: 11.8 },
+      { tld: '.io / .ai', percentage: 9.2 },
+      { tld: '.edu / .gov', percentage: 3.8 },
+      { tld: 'Others', percentage: 2.8 }
+    ],
+    top_anchors: [
+      { anchor: baseName, percentage: 34.5, backlinks_count: Math.round(totalBl * 0.345) },
+      { anchor: `visit ${cleanDomain}`, percentage: 18.2, backlinks_count: Math.round(totalBl * 0.182) },
+      { anchor: `${baseName} platform`, percentage: 12.4, backlinks_count: Math.round(totalBl * 0.124) },
+      { anchor: 'official website', percentage: 8.1, backlinks_count: Math.round(totalBl * 0.081) },
+      { anchor: 'learn more', percentage: 6.5, backlinks_count: Math.round(totalBl * 0.065) }
+    ],
+    top_linked_pages: [
+      { path: '/', backlinks: Math.round(totalBl * 0.58), referring_domains: Math.round(refDoms * 0.62) },
+      { path: '/pricing', backlinks: Math.round(totalBl * 0.16), referring_domains: Math.round(refDoms * 0.18) },
+      { path: '/docs', backlinks: Math.round(totalBl * 0.12), referring_domains: Math.round(refDoms * 0.14) },
+      { path: '/blog', backlinks: Math.round(totalBl * 0.08), referring_domains: Math.round(refDoms * 0.09) }
+    ]
+  };
+
+  // Display Ads Intelligence (Similarweb Ads Style)
+  const adIntelligence = {
+    ad_networks: [
+      { network: 'Google Display Network', share: 58.4 },
+      { network: 'Taboola', share: 18.2 },
+      { network: 'Criteo Dynamic Retargeting', share: 14.5 },
+      { network: 'Outbrain', share: 8.9 }
+    ],
+    top_publishers: [
+      { domain: 'techcrunch.com', category: 'Tech News', impressions_share: 32.4 },
+      { domain: 'forbes.com', category: 'Business & Finance', impressions_share: 26.1 },
+      { domain: 'bloomberg.com', category: 'Financial Markets', impressions_share: 18.5 },
+      { domain: 'theverge.com', category: 'Consumer Electronics', impressions_share: 14.2 },
+      { domain: 'medium.com', category: 'Content Publishing', impressions_share: 8.8 }
+    ],
+    sample_ad_copies: [
+      {
+        headline: `Scale Your Business With ${baseName.charAt(0).toUpperCase() + baseName.slice(1)}`,
+        cta: 'Start Free Trial',
+        format: '300x250 Medium Rectangle',
+        display_url: `${cleanDomain}/trial`
+      },
+      {
+        headline: `The #1 ${category.split('&')[0].trim()} Platform`,
+        cta: 'Request Demo',
+        format: '728x90 Leaderboard',
+        display_url: `${cleanDomain}/enterprise`
+      },
+      {
+        headline: `Save 40+ Hours With ${baseName.charAt(0).toUpperCase() + baseName.slice(1)} Automation`,
+        cta: 'See Case Studies',
+        format: '160x600 Wide Skyscraper',
+        display_url: `${cleanDomain}/customers`
+      }
+    ]
+  };
+
   return {
     domain: cleanDomain,
     title: `${baseName.charAt(0).toUpperCase() + baseName.slice(1)} Intelligence Report`,
@@ -275,6 +347,8 @@ export async function analyzeTrafficClient(domain) {
     audience_demographics: audienceDemographics,
     competitors: competitorDomains,
     competitor_matrix: competitorMatrix,
+    backlink_profile: backlinkProfile,
+    ad_intelligence: adIntelligence,
     registration_date: regDate ? regDate.toISOString().split('T')[0] : null,
     domain_age_days: domainAgeDays,
     is_newly_launched: isNewlyLaunched,
@@ -437,6 +511,30 @@ export async function analyzeKeywordsClient(query) {
     { question: `Where can I find verified ${cleanQ} documentation?`, category: 'where' }
   ];
 
+  // Keyword Gap Matrix (Semrush Style Competitor Opportunities)
+  const keywordGap = {
+    missing_keywords: [
+      { keyword: `${cleanQ} enterprise security`, volume: Math.round(searchVolume * 0.42), kd: Math.max(15, difficulty - 8), cpc: Number((cpc * 1.35).toFixed(2)), intent: 'Commercial', your_rank: null, competitor_rank: 3, gap_type: 'missing' },
+      { keyword: `${cleanQ} compliance checklist`, volume: Math.round(searchVolume * 0.28), kd: Math.max(12, difficulty - 15), cpc: Number((cpc * 1.10).toFixed(2)), intent: 'Informational', your_rank: null, competitor_rank: 5, gap_type: 'missing' },
+      { keyword: `deploy ${cleanQ} on aws`, volume: Math.round(searchVolume * 0.35), kd: Math.max(18, difficulty - 12), cpc: Number((cpc * 1.25).toFixed(2)), intent: 'Transactional', your_rank: null, competitor_rank: 2, gap_type: 'missing' }
+    ],
+    weak_keywords: [
+      { keyword: `${cleanQ} pricing comparison`, volume: Math.round(searchVolume * 0.65), kd: Math.min(95, difficulty + 4), cpc: Number((cpc * 1.5).toFixed(2)), intent: 'Commercial', your_rank: 14, competitor_rank: 2, gap_type: 'weak' },
+      { keyword: `best ${cleanQ} integration`, volume: Math.round(searchVolume * 0.48), kd: Math.min(92, difficulty + 2), cpc: Number((cpc * 1.2).toFixed(2)), intent: 'Commercial', your_rank: 18, competitor_rank: 4, gap_type: 'weak' },
+      { keyword: `${cleanQ} performance benchmarks`, volume: Math.round(searchVolume * 0.38), kd: Math.max(10, difficulty - 5), cpc: Number((cpc * 0.95).toFixed(2)), intent: 'Informational', your_rank: 22, competitor_rank: 6, gap_type: 'weak' }
+    ],
+    shared_keywords: [
+      { keyword: `${cleanQ} software`, volume: searchVolume, kd: difficulty, cpc: cpc, intent: intent, your_rank: 4, competitor_rank: 2, gap_type: 'shared' },
+      { keyword: `${cleanQ} platform`, volume: Math.round(searchVolume * 0.82), kd: Math.max(10, difficulty - 2), cpc: Number((cpc * 1.05).toFixed(2)), intent: 'Commercial', your_rank: 3, competitor_rank: 5, gap_type: 'shared' },
+      { keyword: `${cleanQ} api`, volume: Math.round(searchVolume * 0.74), kd: Math.max(10, difficulty - 6), cpc: Number((cpc * 1.15).toFixed(2)), intent: 'Informational', your_rank: 2, competitor_rank: 3, gap_type: 'shared' }
+    ],
+    untapped_keywords: [
+      { keyword: `automated ${cleanQ} workflow`, volume: Math.round(searchVolume * 0.32), kd: 28, cpc: Number((cpc * 1.4).toFixed(2)), intent: 'Transactional', your_rank: null, competitor_rank: null, gap_type: 'untapped' },
+      { keyword: `${cleanQ} for remote engineering teams`, volume: Math.round(searchVolume * 0.22), kd: 22, cpc: Number((cpc * 1.1).toFixed(2)), intent: 'Commercial', your_rank: null, competitor_rank: null, gap_type: 'untapped' },
+      { keyword: `open source ${cleanQ} alternatives 2026`, volume: Math.round(searchVolume * 0.45), kd: 34, cpc: Number((cpc * 0.8).toFixed(2)), intent: 'Informational', your_rank: null, competitor_rank: null, gap_type: 'untapped' }
+    ]
+  };
+
   return {
     query: cleanQ,
     search_volume: searchVolume,
@@ -450,6 +548,7 @@ export async function analyzeKeywordsClient(query) {
     serp_features: serpFeatures,
     top_serp_results: topSerpResults,
     variations: variations,
+    keyword_gap: keywordGap,
     interest_over_time: interestOverTime,
     breakout_queries: breakoutQueries,
     related_queries: liveSuggestions.length > 0 ? liveSuggestions : [`${cleanQ} tips`, `${cleanQ} guide`],
@@ -549,6 +648,22 @@ export async function analyzeSocialClient(query) {
     { item: 'Pinned Comment With Call to Action', passed: true, score: 90, tip: 'Community engagement pinned within the first 60 minutes' }
   ];
 
+  // Audience Overlap (Channels this audience also watches)
+  const audienceOverlap = [
+    { handle: '@mkbhd', title: 'Marques Brownlee', overlap_score: 78, subscriber_count: 19400000, shared_topics: ['Smartphones', 'Clean Setups', 'AI Hardware'] },
+    { handle: '@veritasium', title: 'Veritasium', overlap_score: 64, subscriber_count: 16400000, shared_topics: ['Physics', 'Deep Dives', 'Engineering Breakthroughs'] },
+    { handle: '@fireship', title: 'Fireship', overlap_score: 59, subscriber_count: 3550000, shared_topics: ['Software Engineering', 'Tech News in 100s', 'Web Dev'] },
+    { handle: '@lexfridman', title: 'Lex Fridman', overlap_score: 52, subscriber_count: 4200000, shared_topics: ['AI Research', 'Long-form Interviews', 'Philosophy & Science'] }
+  ];
+
+  // Optimal Upload Timing Schedule
+  const uploadSchedule = {
+    best_day: 'Wednesday & Saturday',
+    best_time: '2:00 PM - 5:00 PM EST',
+    peak_velocity_window: 'First 180 Minutes (Peak VPH)',
+    consistency_score: 94
+  };
+
   return {
     handle: `@${cleanHandle}`,
     title: title,
@@ -569,6 +684,8 @@ export async function analyzeSocialClient(query) {
     top_videos: topVideos,
     social_footprint: socialFootprint,
     seo_checklist: seoChecklist,
+    audience_overlap: audienceOverlap,
+    upload_schedule: uploadSchedule,
     sample_tags: sampleTags,
     video_analysis: {
       video_id: `v_${hash.toString(36)}`,
@@ -677,6 +794,56 @@ export async function analyzeAudienceClient(topic) {
       { tag: '#SaaSMetrics', frequency: 7600, engagement_score: 85 },
       { tag: '#ProductivityHacks', frequency: 12100, engagement_score: 91 },
       { tag: '#DevOps', frequency: 15300, engagement_score: 89 }
+    ],
+    viral_articles: [
+      {
+        title: `The Complete 2026 Playbook for Scaling ${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)}`,
+        source_domain: 'techcrunch.com',
+        url: `https://techcrunch.com/2026/02/scaling-${cleanTopic.replace(/\s+/g, '-')}-guide`,
+        published_date: '3 days ago',
+        total_shares: 4280,
+        twitter_shares: 1840,
+        reddit_upvotes: 1250,
+        linkedin_shares: 980,
+        facebook_shares: 210,
+        velocity_trend: 'Viral Surge'
+      },
+      {
+        title: `Why 78% of Startups Are Rebuilding Their ${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)} Stack`,
+        source_domain: 'news.ycombinator.com',
+        url: 'https://news.ycombinator.com/item?id=3912048',
+        published_date: '1 week ago',
+        total_shares: 3650,
+        twitter_shares: 1120,
+        reddit_upvotes: 1890,
+        linkedin_shares: 540,
+        facebook_shares: 100,
+        velocity_trend: 'Trending Up'
+      },
+      {
+        title: `Engineering Deep Dive: Modern Architecture Behind ${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)}`,
+        source_domain: 'github.blog',
+        url: `https://github.blog/2026-01-engineering-${cleanTopic.replace(/\s+/g, '-')}`,
+        published_date: '2 weeks ago',
+        total_shares: 2940,
+        twitter_shares: 920,
+        reddit_upvotes: 1420,
+        linkedin_shares: 480,
+        facebook_shares: 120,
+        velocity_trend: 'Evergreen'
+      },
+      {
+        title: `The Future of ${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)}: Benchmarks, Metrics, and Market Reality`,
+        source_domain: 'forbes.com',
+        url: `https://forbes.com/innovation/2026/${cleanTopic.replace(/\s+/g, '-')}-future`,
+        published_date: '3 weeks ago',
+        total_shares: 2180,
+        twitter_shares: 640,
+        reddit_upvotes: 480,
+        linkedin_shares: 920,
+        facebook_shares: 140,
+        velocity_trend: 'Evergreen'
+      }
     ],
     key_topics: [
       `#${cleanTopic}`,

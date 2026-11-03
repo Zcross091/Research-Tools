@@ -40,6 +40,14 @@ def test_analyze_domain_traffic():
     assert len(res.subdomains) > 0
     assert len(res.competitor_matrix) > 0
     assert res.audience_demographics.gender["male"] > 0
+    assert res.backlink_profile is not None
+    assert res.backlink_profile.domain_rating > 0
+    assert len(res.backlink_profile.top_anchors) > 0
+    assert len(res.backlink_profile.top_linked_pages) > 0
+    assert res.ad_intelligence is not None
+    assert len(res.ad_intelligence.ad_networks) > 0
+    assert len(res.ad_intelligence.top_publishers) > 0
+    assert len(res.ad_intelligence.sample_ad_copies) > 0
     assert res.confidence.confidence_score >= 80
 
 def test_newly_launched_domain():
@@ -63,6 +71,11 @@ def test_analyze_keyword():
     assert res.click_potential.organic_clicks > 0
     assert len(res.interest_over_time) == 12
     assert len(res.questions) > 0
+    assert res.keyword_gap is not None
+    assert len(res.keyword_gap.missing_keywords) > 0
+    assert len(res.keyword_gap.weak_keywords) > 0
+    assert len(res.keyword_gap.shared_keywords) > 0
+    assert len(res.keyword_gap.untapped_keywords) > 0
     assert res.confidence.confidence_score >= 80
 
 def test_analyze_social():
@@ -75,6 +88,9 @@ def test_analyze_social():
     assert len(res.top_videos) > 0
     assert len(res.social_footprint) > 0
     assert len(res.seo_checklist) == 6
+    assert len(res.audience_overlap) > 0
+    assert res.upload_schedule is not None
+    assert res.upload_schedule.best_day != ""
 
 def test_analyze_audience():
     res = asyncio.run(analyze_audience("ecommerce"))
@@ -87,3 +103,4 @@ def test_analyze_audience():
     assert len(res.extended_demographics.education_levels) > 0
     assert len(res.pain_points) > 0
     assert len(res.top_hashtags) > 0
+    assert len(res.viral_articles) > 0

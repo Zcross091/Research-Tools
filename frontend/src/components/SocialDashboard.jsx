@@ -304,6 +304,99 @@ export default function SocialDashboard({ data, loading, onSearch, onInspectTags
             </div>
           </div>
 
+          {/* Audience Cross-Channel Overlap & Optimal Upload Timing (vidIQ Boost Caliber) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Audience Overlap */}
+            {data.audience_overlap && data.audience_overlap.length > 0 && (
+              <div className="p-6 rounded-3xl bg-white border border-sky-100 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-sky-100">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-sky-600" />
+                      <span>Audience Overlap Matrix</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium">Other channels this creator&apos;s viewers also watch</p>
+                  </div>
+                  <span className="text-[11px] px-2.5 py-0.5 bg-sky-100 text-sky-700 font-bold rounded-full border border-sky-200">
+                    vidIQ Pro
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {data.audience_overlap.map((ov, idx) => (
+                    <div key={idx} className="p-3.5 rounded-2xl bg-sky-50/40 border border-sky-100 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-slate-900 text-xs">{ov.title}</span>
+                          <span className="text-slate-400 font-mono text-[11px] ml-1.5">{ov.handle}</span>
+                        </div>
+                        <span className="text-xs font-bold font-mono text-sky-700 bg-sky-100 px-2 py-0.5 rounded-lg border border-sky-200">
+                          {ov.overlap_score}% Shared
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-sky-100 overflow-hidden">
+                        <div className="bg-sky-600 h-full rounded-full" style={{ width: `${ov.overlap_score}%` }}></div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {ov.shared_topics?.map((topic, tidx) => (
+                          <span key={tidx} className="text-[10px] px-2 py-0.5 bg-white border border-sky-200 text-slate-600 rounded-md font-medium">
+                            {topic}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Optimal Upload Timing */}
+            {data.upload_schedule && (
+              <div className="p-6 rounded-3xl bg-white border border-sky-100 shadow-sm space-y-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between pb-3 border-b border-sky-100">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-sky-600" />
+                        <span>Optimal Upload Timing Schedule</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium">Peak algorithmic velocity windows for maximum initial CTR</p>
+                    </div>
+                    <span className="text-[11px] px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded-full border border-emerald-200">
+                      Peak Velocity
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 pt-3">
+                    <div className="p-3 rounded-2xl bg-sky-50/50 border border-sky-100 flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Best Days to Publish:</span>
+                      <span className="font-bold text-sky-800 text-xs font-mono">{data.upload_schedule.best_day}</span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-sky-50/50 border border-sky-100 flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Optimal Time Window:</span>
+                      <span className="font-bold text-slate-900 text-xs font-mono">{data.upload_schedule.best_time}</span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-sky-50/50 border border-sky-100 flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Peak Velocity Window:</span>
+                      <span className="font-bold text-emerald-700 text-xs font-mono">{data.upload_schedule.peak_velocity_window}</span>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-sky-50/50 border border-sky-100 flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Publishing Consistency:</span>
+                      <span className="font-bold text-sky-700 text-xs font-mono">{data.upload_schedule.consistency_score}% High Grade</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-sky-50/60 rounded-xl border border-sky-100 text-[11px] text-sky-800">
+                  Publishing during this optimal window ensures subscriber push notifications land when audience session density is at its highest.
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* vidIQ Competitor Video Tag Inspector */}
           <div className="p-6 sm:p-8 rounded-3xl bg-white border border-sky-100 shadow-sm">
             <div className="max-w-2xl mb-4">

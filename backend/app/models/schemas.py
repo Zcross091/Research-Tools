@@ -7,7 +7,7 @@ class ConfidenceMeta(BaseModel):
     method: str = Field(..., description="Method used (Direct API, Live Scraper, Benchmark Model)")
     timestamp: str
 
-# ----------------- TRAFFIC SCHEMAS (Similarweb Caliber) -----------------
+# ----------------- TRAFFIC & AUTHORITY SCHEMAS (Similarweb & Ahrefs Caliber) -----------------
 
 class TrafficSourceBreakdown(BaseModel):
     direct: float
@@ -88,6 +88,49 @@ class CompetitorMatrixItem(BaseModel):
     shared_keywords: int
     category: str
 
+# Backlinks & Domain Authority (Ahrefs / Moz Caliber)
+class AnchorTextItem(BaseModel):
+    anchor: str
+    percentage: float
+    backlinks_count: int
+
+class TopLinkedPageItem(BaseModel):
+    path: str
+    backlinks: int
+    referring_domains: int
+
+class BacklinkProfile(BaseModel):
+    domain_rating: int  # 1 to 100
+    url_rating: int  # 1 to 100
+    total_backlinks: int
+    referring_domains: int
+    referring_ips: int
+    dofollow_ratio: float  # e.g. 84.5%
+    tld_distribution: List[Dict[str, Any]]  # [{"tld": ".com", "percentage": 74.0}, ...]
+    top_anchors: List[AnchorTextItem] = []
+    top_linked_pages: List[TopLinkedPageItem] = []
+
+# Display Ads & Creatives (Similarweb Ads Caliber)
+class AdNetworkItem(BaseModel):
+    network: str
+    share: float
+
+class AdPublisherItem(BaseModel):
+    domain: str
+    category: str
+    impressions_share: float
+
+class SampleAdCopy(BaseModel):
+    headline: str
+    cta: str
+    format: str  # e.g. "300x250 Medium Rectangle"
+    display_url: str
+
+class AdCreativeIntelligence(BaseModel):
+    ad_networks: List[AdNetworkItem] = []
+    top_publishers: List[AdPublisherItem] = []
+    sample_ad_copies: List[SampleAdCopy] = []
+
 class TrafficResponse(BaseModel):
     domain: str
     title: Optional[str] = None
@@ -115,13 +158,15 @@ class TrafficResponse(BaseModel):
     audience_demographics: AudienceDemographics
     competitors: List[str]
     competitor_matrix: List[CompetitorMatrixItem] = []
+    backlink_profile: Optional[BacklinkProfile] = None
+    ad_intelligence: Optional[AdCreativeIntelligence] = None
     registration_date: Optional[str] = None
     domain_age_days: Optional[int] = None
     is_newly_launched: bool = False
     data_status_note: Optional[str] = None
     confidence: ConfidenceMeta
 
-# ----------------- KEYWORD SCHEMAS (Semrush / Ahrefs Caliber) -----------------
+# ----------------- KEYWORD & OPPORTUNITY GAP SCHEMAS (Semrush Caliber) -----------------
 
 class CountryVolumeItem(BaseModel):
     country: str
@@ -171,6 +216,23 @@ class QuestionItem(BaseModel):
     question: str
     category: str  # who, what, where, why, how, can, best, is
 
+# Keyword Gap & Content Opportunity Matrix (Semrush flagship feature)
+class KeywordGapItem(BaseModel):
+    keyword: str
+    volume: int
+    kd: int
+    cpc: float
+    intent: str
+    your_rank: Optional[int] = None
+    competitor_rank: Optional[int] = None
+    gap_type: str  # 'missing' | 'weak' | 'shared' | 'untapped'
+
+class KeywordGapMatrix(BaseModel):
+    missing_keywords: List[KeywordGapItem] = []
+    weak_keywords: List[KeywordGapItem] = []
+    shared_keywords: List[KeywordGapItem] = []
+    untapped_keywords: List[KeywordGapItem] = []
+
 class KeywordResponse(BaseModel):
     query: str
     search_volume: int
@@ -184,13 +246,14 @@ class KeywordResponse(BaseModel):
     serp_features: List[SerpFeatureItem] = []
     top_serp_results: List[SerpRankingItem] = []
     variations: KeywordVariationsGroup
+    keyword_gap: Optional[KeywordGapMatrix] = None
     interest_over_time: List[InterestPoint]
     breakout_queries: List[RisingQuery]
     related_queries: List[str]
     questions: List[QuestionItem]
     confidence: ConfidenceMeta
 
-# ----------------- SOCIAL SCHEMAS (SocialBlade / vidIQ Caliber) -----------------
+# ----------------- SOCIAL & CREATOR OVERLAP SCHEMAS (SocialBlade / vidIQ Caliber) -----------------
 
 class VideoSEOAnalysis(BaseModel):
     video_id: Optional[str] = None
@@ -237,6 +300,20 @@ class SeoChecklistItem(BaseModel):
     score: int
     tip: str
 
+# Audience Overlap & Optimal Upload Timing (vidIQ Boost Caliber)
+class CreatorOverlapItem(BaseModel):
+    handle: str
+    title: str
+    overlap_score: int  # e.g. 72%
+    subscriber_count: int
+    shared_topics: List[str]
+
+class UploadScheduleItem(BaseModel):
+    best_day: str
+    best_time: str
+    peak_velocity_window: str
+    consistency_score: int
+
 class SocialResponse(BaseModel):
     handle: str
     title: str
@@ -257,11 +334,13 @@ class SocialResponse(BaseModel):
     top_videos: List[TopVideoItem] = []
     social_footprint: List[SocialFootprintItem] = []
     seo_checklist: List[SeoChecklistItem] = []
+    audience_overlap: List[CreatorOverlapItem] = []
+    upload_schedule: Optional[UploadScheduleItem] = None
     sample_tags: List[str]
     video_analysis: Optional[VideoSEOAnalysis] = None
     confidence: ConfidenceMeta
 
-# ----------------- AUDIENCE SCHEMAS (SparkToro / Brandwatch Caliber) -----------------
+# ----------------- AUDIENCE & VIRAL CONTENT SCHEMAS (SparkToro / BuzzSumo Caliber) -----------------
 
 class PlatformAffinity(BaseModel):
     platform: str
@@ -309,6 +388,19 @@ class CommunityHashtag(BaseModel):
     frequency: int
     engagement_score: int
 
+# Viral Articles & Social Share Velocity (BuzzSumo Caliber)
+class ViralArticleItem(BaseModel):
+    title: str
+    source_domain: str
+    url: str
+    published_date: str
+    total_shares: int
+    twitter_shares: int
+    reddit_upvotes: int
+    linkedin_shares: int
+    facebook_shares: int
+    velocity_trend: str  # 'Trending Up' | 'Viral Surge' | 'Evergreen'
+
 class AudienceResponse(BaseModel):
     query: str
     audience_size_estimate: int = 500000
@@ -319,6 +411,7 @@ class AudienceResponse(BaseModel):
     extended_demographics: ExtendedDemographics
     pain_points: List[PainPointTheme] = []
     top_hashtags: List[CommunityHashtag] = []
+    viral_articles: List[ViralArticleItem] = []
     key_topics: List[str]
     demographic_profile: Dict[str, Any]
     confidence: ConfidenceMeta

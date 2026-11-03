@@ -3,7 +3,7 @@ import {
   Globe, Search, TrendingUp, Layers, Flag, ExternalLink, Cpu, 
   Clock, Eye, BarChart3, PieChart as PieIcon, Sparkles, AlertCircle,
   Smartphone, Monitor, Share2, ArrowUpRight, ShieldCheck, Users,
-  FolderGit2, Link2, Target, GitCompare
+  FolderGit2, Link2, Target, GitCompare, Megaphone
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import MetricsCard from './MetricsCard';
 import ConfidenceBadge from './ConfidenceBadge';
+import BacklinksExplorer from './BacklinksExplorer';
 
 const CHANNEL_COLORS = ['#0284c7', '#38bdf8', '#6366f1', '#f59e0b', '#ec4899', '#94a3b8'];
 
@@ -570,6 +571,94 @@ export default function TrafficDashboard({ data, loading, onSearch, onCompare })
               </table>
             </div>
           </div>
+
+          {/* Backlink Profile & Authority Health Hub (Ahrefs Caliber) */}
+          {data.backlink_profile && (
+            <BacklinksExplorer backlinkProfile={data.backlink_profile} domain={data.domain} />
+          )}
+
+          {/* Display Ads & Creative Intelligence (Similarweb Ads Caliber) */}
+          {data.ad_intelligence && (
+            <div className="bg-white rounded-3xl p-6 border border-sky-100 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-sky-100 gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-sky-50 rounded-xl text-sky-600 border border-sky-100">
+                    <Megaphone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-800 text-base">Display Ad Intelligence & Placements</h3>
+                      <span className="text-[11px] px-2 py-0.5 bg-sky-100 text-sky-700 font-semibold rounded-full border border-sky-200">
+                        Similarweb Ads
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">Top ad networks, placement publishers, and live creative copies</p>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-500 font-medium">
+                  Paid Display Traffic Share: <span className="font-bold text-sky-700">{data.sources?.display || 1.0}%</span>
+                </div>
+              </div>
+
+              {/* Ad Networks & Top Publishers */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Top Ad Networks */}
+                <div className="p-4 bg-sky-50/40 rounded-2xl border border-sky-100">
+                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Top Ad Networks Used</h4>
+                  <div className="space-y-2.5">
+                    {data.ad_intelligence.ad_networks?.map((net, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-slate-700">{net.network}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-slate-200 h-2 rounded-full overflow-hidden">
+                            <div className="bg-sky-600 h-full rounded-full" style={{ width: `${net.share}%` }}></div>
+                          </div>
+                          <span className="font-mono font-semibold text-slate-800 w-12 text-right">{net.share}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top Placement Publishers */}
+                <div className="p-4 bg-sky-50/40 rounded-2xl border border-sky-100">
+                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Top Placement Publisher Sites</h4>
+                  <div className="space-y-2.5">
+                    {data.ad_intelligence.top_publishers?.map((pub, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sky-700">{pub.domain}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">{pub.category}</span>
+                        </div>
+                        <span className="font-mono text-slate-600 font-medium">{pub.impressions_share}% share</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Sample Display Ad Banners */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Sample Banner Creatives & Ad Headlines</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {data.ad_intelligence.sample_ad_copies?.map((ad, idx) => (
+                    <div key={idx} className="p-4 rounded-2xl bg-gradient-to-br from-sky-50/60 to-white border border-sky-200/80 shadow-xs flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">{ad.format}</span>
+                        <h5 className="font-bold text-slate-800 text-sm mt-1 mb-2">&ldquo;{ad.headline}&rdquo;</h5>
+                        <div className="text-[11px] text-sky-600 font-mono flex items-center gap-1 mb-4">
+                          <ExternalLink className="w-3 h-3" /> {ad.display_url}
+                        </div>
+                      </div>
+                      <div className="w-full py-1.5 px-3 bg-sky-600 text-white rounded-xl text-xs font-semibold text-center shadow-xs">
+                        {ad.cta}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Bottom Grid: Geography & Tech Stack & Audience Demographics */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

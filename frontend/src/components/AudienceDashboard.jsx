@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Users, Search, Smile, Frown, Meh, MessageSquare, 
   Share2, Radio, ExternalLink, Globe, Podcast, 
-  Video, Newspaper, Award, Hash, AlertCircle, ThumbsUp
+  Video, Newspaper, Award, Hash, AlertCircle, ThumbsUp, Flame
 } from 'lucide-react';
 import MetricsCard from './MetricsCard';
 import ConfidenceBadge from './ConfidenceBadge';
@@ -386,6 +386,71 @@ export default function AudienceDashboard({ data, loading, onSearch }) {
                     <span className="px-1.5 py-0.2 rounded bg-white text-emerald-700 text-[10px] font-bold font-mono border border-emerald-200">
                       {ht.engagement_score}% score
                     </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Viral Content & Social Share Velocity Tracker (BuzzSumo Caliber) */}
+          {data.viral_articles && data.viral_articles.length > 0 && (
+            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-sky-100 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-sky-100 gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Flame className="w-4 h-4 text-rose-500" />
+                      <span>Viral Content & Social Share Velocity Tracker</span>
+                    </h3>
+                    <span className="text-[11px] px-2.5 py-0.5 bg-rose-50 text-rose-700 font-bold rounded-full border border-rose-200">
+                      BuzzSumo Caliber
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium">Most shared articles, guides, and discussions in this niche across social channels</p>
+                </div>
+                <span className="text-xs text-slate-500 font-medium">
+                  Tracking Twitter, Reddit, LinkedIn & Facebook
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {data.viral_articles.map((art, idx) => (
+                  <div key={idx} className="p-4 rounded-2xl bg-sky-50/40 border border-sky-100 hover:border-sky-300 transition-all flex flex-col justify-between space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-[11px] font-mono text-sky-700 font-semibold">{art.source_domain}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          art.velocity_trend === 'Viral Surge'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : art.velocity_trend === 'Trending Up'
+                            ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}>
+                          {art.velocity_trend}
+                        </span>
+                      </div>
+                      <a 
+                        href={art.url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="font-bold text-slate-900 text-sm hover:text-sky-600 transition-colors flex items-start gap-1.5"
+                      >
+                        <span>&ldquo;{art.title}&rdquo;</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                      </a>
+                      <div className="text-[11px] text-slate-400 mt-1">Published {art.published_date}</div>
+                    </div>
+
+                    <div className="pt-2 border-t border-sky-100/70 flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-800 font-mono">
+                        {art.total_shares.toLocaleString()} Total Shares
+                      </span>
+                      <div className="flex items-center gap-2.5 text-[11px] text-slate-500 font-mono">
+                        <span title="Twitter / X shares">𝕏 {art.twitter_shares.toLocaleString()}</span>
+                        <span title="Reddit upvotes">Reddit {art.reddit_upvotes.toLocaleString()}</span>
+                        <span title="LinkedIn shares">in {art.linkedin_shares.toLocaleString()}</span>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

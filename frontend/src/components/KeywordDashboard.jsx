@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import MetricsCard from './MetricsCard';
 import ConfidenceBadge from './ConfidenceBadge';
+import KeywordGapExplorer from './KeywordGapExplorer';
 
 export default function KeywordDashboard({ data, loading, onSearch }) {
   const [inputVal, setInputVal] = useState('');
@@ -461,6 +462,15 @@ export default function KeywordDashboard({ data, loading, onSearch }) {
               </div>
             </div>
           </div>
+
+          {/* Keyword Gap & Content Opportunity Matrix (Semrush Flagship) */}
+          {data.keyword_gap && (
+            <KeywordGapExplorer 
+              keywordGap={data.keyword_gap} 
+              primaryDomain={data.query} 
+              competitorDomain="Industry Competitors" 
+            />
+          )}
 
           {/* People Also Ask (Questions Explorer) */}
           <div className="p-6 rounded-3xl bg-white border border-sky-100 shadow-sm">
