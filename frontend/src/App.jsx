@@ -8,6 +8,7 @@ import ComparisonView from './components/ComparisonView';
 import ExportReportModal from './components/ExportReportModal';
 import SplashScreen from './components/SplashScreen';
 import UpdateModal from './components/UpdateModal';
+import StateCraftBadge from './components/StateCraftBadge';
 import { checkForAppUpdates, APP_VERSION } from './services/updater';
 import { 
   fetchTraffic, fetchKeywords, fetchSocial, 
@@ -260,6 +261,9 @@ export default function App() {
           onClose={() => setIsUpdateModalOpen(false)}
         />
       )}
+
+      {/* Persistent Brand Attribution Badge */}
+      <StateCraftBadge />
     </div>
   );
 }
