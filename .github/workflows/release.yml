@@ -1,0 +1,61 @@
+name: Release APK
+
+on:
+  workflow_run:
+    workflows: ["Build APK"]
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release-apk:
+    name: Publish Signed APK Release
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Signed APK from Build Run
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-apk
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: release-asset
+
+      - name: Verify Signed APK File
+        run: |
+          ls -la release-asset/
+          if [ ! -f "release-asset/OmniResearch-release.apk" ]; then
+            echo "Searching for downloaded APK..."
+            find release-asset/ -name "*.apk"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.event.workflow_run.run_number || github.run_number }}
+          name: OmniResearch v1.0.${{ github.event.workflow_run.run_number || github.run_number }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## OmniResearch Official Signed Release 📱
+            
+            This APK is cryptographically signed with our permanent 28-year RSA certificate (valid until 2054).
+            
+            ### ✨ In-Place Updates Guaranteed
+            - You can install this APK directly over any previous version without deleting or uninstalling old versions.
+            - All local data and configuration are preserved automatically.
+            
+            ### Direct Download:
+            - 📱 **Download Android App**: `OmniResearch-release.apk`
+          files: |
+            release-asset/OmniResearch-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

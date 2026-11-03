@@ -1,0 +1,91 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build-apk:
+    name: Build & Sign Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build Web Application Bundle
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Initialize & Sync Capacitor Android
+        run: |
+          cd frontend
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+
+      - name: Compile Android Release APK
+        run: |
+          cd frontend/android
+          chmod +x ./gradlew
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Sign APK with Permanent Keystore (In-Place Updates)
+        run: |
+          cp scripts/release.keystore release.keystore
+          echo "Using permanent repository release.keystore (Fingerprint: DB:C6:15:2E...)"
+
+          # Locate the compiled unsigned APK
+          APK_RAW=$(find frontend/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          echo "Found compiled APK: $APK_RAW"
+
+          # Locate apksigner in Android build-tools
+          APKSIGNER=$(find $ANDROID_HOME/build-tools/ -name apksigner | sort -V | tail -n 1)
+          echo "Using apksigner tool: $APKSIGNER"
+
+          # Sign using v1, v2, and v3 signature schemes for in-place upgrade compatibility
+          $APKSIGNER sign \
+            --ks release.keystore \
+            --ks-key-alias "omniresearch" \
+            --ks-pass "pass:OmniResearch2026!" \
+            --key-pass "pass:OmniResearch2026!" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out OmniResearch-release.apk \
+            "$APK_RAW"
+
+          # Verify signature integrity
+          $APKSIGNER verify --verbose OmniResearch-release.apk
+          ls -lh OmniResearch-release.apk
+
+      - name: Upload Signed APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-apk
+          path: OmniResearch-release.apk
+          retention-days: 14
