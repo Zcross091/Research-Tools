@@ -1,0 +1,265 @@
+import React, { useState, useEffect } from 'react';
+import Navbar from './components/Navbar';
+import TrafficDashboard from './components/TrafficDashboard';
+import KeywordDashboard from './components/KeywordDashboard';
+import SocialDashboard from './components/SocialDashboard';
+import AudienceDashboard from './components/AudienceDashboard';
+import ComparisonView from './components/ComparisonView';
+import ExportReportModal from './components/ExportReportModal';
+import SplashScreen from './components/SplashScreen';
+import UpdateModal from './components/UpdateModal';
+import { checkForAppUpdates, APP_VERSION } from './services/updater';
+import { 
+  fetchTraffic, fetchKeywords, fetchSocial, 
+  fetchAudience, fetchVideoTags 
+} from './services/api';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('traffic');
+  
+  // Splash & Update states
+  const [showSplash, setShowSplash] = useState(true);
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [checkingManualUpdate, setCheckingManualUpdate] = useState(false);
+
+  // Data states
+  const [trafficData, setTrafficData] = useState(null);
+  const [keywordsData, setKeywordsData] = useState(null);
+  const [socialData, setSocialData] = useState(null);
+  const [audienceData, setAudienceData] = useState(null);
+  const [tagAnalysis, setTagAnalysis] = useState(null);
+
+  // Loading & error states
+  const [loading, setLoading] = useState(false);
+  const [tagLoading, setTagLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+
+  // Load initial representative baseline data on mount
+  useEffect(() => {
+    handleSearchTraffic('stripe.com');
+  }, []);
+
+  const handleSplashFinish = (result) => {
+    setShowSplash(false);
+    if (result && result.hasUpdate) {
+      setUpdateInfo(result);
+      setIsUpdateModalOpen(true);
+    }
+  };
+
+  const handleManualCheckUpdate = async () => {
+    setCheckingManualUpdate(true);
+    try {
+      const res = await checkForAppUpdates();
+      setUpdateInfo(res);
+      setIsUpdateModalOpen(true);
+    } catch (e) {
+      console.warn(e);
+    } finally {
+      setCheckingManualUpdate(false);
+    }
+  };
+
+  const handleSearchTraffic = async (domain) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchTraffic(domain);
+      setTrafficData(res);
+    } catch (err) {
+      setError(err.message || 'Failed to analyze website traffic.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchKeywords = async (query) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchKeywords(query);
+      setKeywordsData(res);
+    } catch (err) {
+      setError(err.message || 'Failed to analyze keyword.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchSocial = async (query) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchSocial(query);
+      setSocialData(res);
+      if (res.video_analysis) {
+        setTagAnalysis(res.video_analysis);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to analyze social creator.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInspectTags = async (videoIdOrUrl) => {
+    setTagLoading(true);
+    setError(null);
+    try {
+      const res = await fetchVideoTags(videoIdOrUrl);
+      setTagAnalysis(res);
+    } catch (err) {
+      setError(err.message || 'Failed to extract video tags.');
+    } finally {
+      setTagLoading(false);
+    }
+  };
+
+  const handleSearchAudience = async (topic) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetchAudience(topic);
+      setAudienceData(res);
+    } catch (err) {
+      setError(err.message || 'Failed to analyze audience.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setError(null);
+    if (tabId === 'keywords' && !keywordsData) {
+      handleSearchKeywords('artificial intelligence');
+    } else if (tabId === 'social' && !socialData) {
+      handleSearchSocial('mrbeast');
+    } else if (tabId === 'audience' && !audienceData) {
+      handleSearchAudience('b2b saas');
+    }
+  };
+
+  const getCurrentData = () => {
+    if (activeTab === 'traffic') return trafficData;
+    if (activeTab === 'keywords') return keywordsData;
+    if (activeTab === 'social') return socialData;
+    if (activeTab === 'audience') return audienceData;
+    return null;
+  };
+
+  // If initial 4-second splash screen is active, display it
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f0f7ff] text-slate-800 flex flex-col font-sans">
+      {/* Top Navigation */}
+      <Navbar 
+        activeTab={activeTab} 
+        setActiveTab={handleTabChange} 
+        onOpenExport={() => setIsExportOpen(true)} 
+      />
+
+      {/* Main Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Error notification banner */}
+        {error && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-3 shadow-xs">
+            <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+            <div className="flex-1">{error}</div>
+            <button 
+              onClick={() => setError(null)}
+              className="px-2.5 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Tab Views */}
+        {activeTab === 'traffic' && (
+          <TrafficDashboard
+            data={trafficData}
+            loading={loading}
+            onSearch={handleSearchTraffic}
+            onCompare={() => setActiveTab('compare')}
+          />
+        )}
+
+        {activeTab === 'keywords' && (
+          <KeywordDashboard
+            data={keywordsData}
+            loading={loading}
+            onSearch={handleSearchKeywords}
+          />
+        )}
+
+        {activeTab === 'social' && (
+          <SocialDashboard
+            data={socialData}
+            loading={loading}
+            onSearch={handleSearchSocial}
+            onInspectTags={handleInspectTags}
+            tagAnalysis={tagAnalysis}
+            tagLoading={tagLoading}
+          />
+        )}
+
+        {activeTab === 'audience' && (
+          <AudienceDashboard
+            data={audienceData}
+            loading={loading}
+            onSearch={handleSearchAudience}
+          />
+        )}
+
+        {activeTab === 'compare' && (
+          <ComparisonView />
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-sky-100 bg-white/70 backdrop-blur-sm py-6 text-center text-xs text-slate-500 font-medium">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>OmniResearch Suite • Similarweb, SocialBlade, vidIQ, SparkToro & Google Trends</div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleManualCheckUpdate}
+              disabled={checkingManualUpdate}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white text-sky-700 border border-sky-200 hover:bg-sky-50 transition-all shadow-xs"
+            >
+              <RefreshCw className={`w-3 h-3 ${checkingManualUpdate ? 'animate-spin' : ''}`} />
+              <span>v{APP_VERSION} • Check for Updates</span>
+            </button>
+            <span className="text-[11px] font-mono text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+              Verified Data Engine
+            </span>
+          </div>
+        </div>
+      </footer>
+
+      {/* Export Modal */}
+      <ExportReportModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        activeTab={activeTab}
+        currentData={getCurrentData()}
+      />
+
+      {/* In-App Update Modal */}
+      {isUpdateModalOpen && (
+        <UpdateModal
+          updateInfo={updateInfo}
+          onClose={() => setIsUpdateModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
