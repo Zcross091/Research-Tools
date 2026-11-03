@@ -1,21 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Download, CheckCircle, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, ShieldCheck } from 'lucide-react';
 import { checkForAppUpdates, APP_VERSION } from '../services/updater';
 
 export default function SplashScreen({ onFinish }) {
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('Initializing OmniResearch Suite...');
-  const [updateResult, setUpdateResult] = useState(null);
+  const updateResultRef = useRef(null);
 
   useEffect(() => {
     const DURATION_MS = 4000; // Exact 4-second loading screen
     const INTERVAL_MS = 40;
     const increment = 100 / (DURATION_MS / INTERVAL_MS);
 
-    // 1. Simultaneously check for updates in the background
-    checkForAppUpdates().then((res) => {
-      setUpdateResult(res);
-    });
+    // 1. Simultaneously check for updates in the background without restarting the timer
+    checkForAppUpdates()
+      .then((res) => {
+        updateResultRef.current = res;
+      })
+      .catch((err) => {
+        console.warn('Startup update check error:', err);
+      });
 
     // 2. Animate progress bar smoothly over 4000ms
     const timer = setInterval(() => {
@@ -23,19 +27,21 @@ export default function SplashScreen({ onFinish }) {
         const next = prev + increment;
 
         // Dynamic status transitions over the 4 seconds
-        if (next >= 30 && next < 75) {
-          setStatusMessage('Checking for new software updates...');
-        } else if (next >= 75 && next < 95) {
-          setStatusMessage('Connecting to real-time intelligence feeds...');
-        } else if (next >= 95) {
+        if (next >= 25 && next < 65) {
+          setStatusMessage('Checking for verified software updates...');
+        } else if (next >= 65 && next < 90) {
+          setStatusMessage('Calibrating real-time intelligence feeds...');
+        } else if (next >= 90) {
           setStatusMessage('Ready! Loading dashboard...');
         }
 
         if (next >= 100) {
           clearInterval(timer);
           setTimeout(() => {
-            onFinish && onFinish(updateResult);
-          }, 200);
+            if (onFinish) {
+              onFinish(updateResultRef.current);
+            }
+          }, 150);
           return 100;
         }
         return next;
@@ -43,7 +49,8 @@ export default function SplashScreen({ onFinish }) {
     }, INTERVAL_MS);
 
     return () => clearInterval(timer);
-  }, [onFinish, updateResult]);
+  }, [onFinish]);
+
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#f0f7ff] text-slate-800 p-6 select-none">

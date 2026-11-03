@@ -83,7 +83,7 @@ export default function KeywordDashboard({ data, loading, onSearch }) {
             <div>
               <div className="flex items-center gap-3 flex-wrap">
                 <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight capitalize">
-                  "{data.query}"
+                  &ldquo;{data.query}&rdquo;
                 </h2>
                 <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200">
                   {data.intent} Intent
@@ -224,7 +224,7 @@ export default function KeywordDashboard({ data, loading, onSearch }) {
           <div className="p-6 rounded-3xl bg-white border border-sky-100 shadow-sm">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-1">
               <HelpCircle className="w-4 h-4 text-sky-600" />
-              <span>"People Also Ask" Question Explorer</span>
+              <span>&ldquo;People Also Ask&rdquo; Question Explorer</span>
             </h3>
             <p className="text-xs text-slate-500 font-medium mb-4">High-intent questions asked by searchers for content creation</p>
 

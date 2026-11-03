@@ -89,3 +89,4 @@ jobs:
           name: signed-apk
           path: OmniResearch-release.apk
           retention-days: 14
+

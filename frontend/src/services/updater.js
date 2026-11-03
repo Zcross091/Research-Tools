@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.2';
 
 /**
  * Checks GitHub Releases for a newer version of the application.

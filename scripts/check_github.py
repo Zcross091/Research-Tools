@@ -51,6 +51,11 @@ try:
                     j_status = job.get("status")
                     j_conclusion = job.get("conclusion")
                     print(f"    * Job: {j_name} -> [{j_status.upper()}] Conclusion: {j_conclusion}")
+                    for step in job.get("steps", []):
+                        s_name = step.get("name")
+                        s_status = step.get("status")
+                        s_concl = step.get("conclusion")
+                        print(f"        > {s_name}: [{s_status.upper()}] ({s_concl})")
     else:
         print(f"Response: {r_runs.text}")
 except Exception as e:
