@@ -28,12 +28,13 @@ cache.db
 # Secrets & Local Keystores
 .env
 *.env
-release.keystore
 release.keystore.base64.txt
 *.keystore
+!scripts/release.keystore
 
 # System & IDE files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+

@@ -115,12 +115,15 @@ jobs:
           KEY_PASS="${KEY_PASSWORD:-$DEFAULT_PASS}"
           ALIAS="${KEY_ALIAS:-$DEFAULT_ALIAS}"
 
-          # Setup persistent keystore: from secret if provided, else generate repo-consistent keystore
+          # Setup persistent keystore: from secret if provided, else use repo-committed keystore
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
-            echo "Loaded persistent keystore from GitHub Secret."
+            echo "Loaded custom keystore from GitHub Secret."
+          elif [ -f "scripts/release.keystore" ]; then
+            cp scripts/release.keystore release.keystore
+            echo "Loaded permanent repository release.keystore (ensures identical signature across all builds)."
           else
-            echo "Generating persistent keystore..."
+            echo "Generating fallback keystore..."
             keytool -genkey -v \
               -keystore release.keystore \
               -alias "$ALIAS" \

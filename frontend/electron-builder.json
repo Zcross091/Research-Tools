@@ -22,11 +22,13 @@
     ]
   },
   "nsis": {
+    "guid": "5c9b1062-811c-4394-bb9e-1082c9f56e92",
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "OmniResearch"
+    "shortcutName": "OmniResearch",
+    "deleteAppDataOnUninstall": false,
+    "differentialPackage": true
   }
 }
-
