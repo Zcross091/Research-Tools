@@ -62,9 +62,19 @@ export default function App() {
   const [tagLoading, setTagLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load initial representative baseline data on mount
+  // Load initial representative baseline data on mount & silently check for updates
   useEffect(() => {
     handleSearchTraffic('stripe.com');
+    checkForAppUpdates()
+      .then((res) => {
+        if (res && res.hasUpdate) {
+          setUpdateInfo(res);
+          setIsUpdateModalOpen(true);
+        }
+      })
+      .catch((e) => {
+        console.warn('Background update check:', e);
+      });
   }, []);
 
   const handleSplashFinish = () => {
