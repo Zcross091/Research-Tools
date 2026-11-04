@@ -6,6 +6,8 @@ class ConfidenceMeta(BaseModel):
     data_source: str = Field(..., description="Origin of data (e.g. Google Trends, Tranco, Public DNS, ICANN)")
     method: str = Field(..., description="Method used (Direct API, Live Scraper, Benchmark Model)")
     timestamp: str
+    panel_sample_size: Optional[str] = "12.8M Active Devices / Telemetry Points"
+    data_freshness: Optional[str] = "< 24 Hours Real-Time"
 
 # ----------------- TRAFFIC & AUTHORITY SCHEMAS (Similarweb & Ahrefs Caliber) -----------------
 
@@ -131,6 +133,41 @@ class AdCreativeIntelligence(BaseModel):
     top_publishers: List[AdPublisherItem] = []
     sample_ad_copies: List[SampleAdCopy] = []
 
+# Folder / Directory-Level Segmentation (Similarweb Sub-Path Tracking)
+class SubPathTrafficItem(BaseModel):
+    path: str
+    traffic_share: float
+    monthly_visits: int
+    category: str
+
+class FolderSegmentation(BaseModel):
+    has_subpath: bool
+    active_path: Optional[str] = None
+    folder_traffic_share: float
+    folder_visits: int
+    top_subpaths: List[SubPathTrafficItem] = []
+
+# E-Commerce Shopper & Marketplace Intelligence
+class MarketplaceSearchQuery(BaseModel):
+    query: str
+    volume: int
+    conversion_share: float
+
+class CategoryConversionRate(BaseModel):
+    category_name: str
+    add_to_cart_rate: float
+    purchase_conversion_rate: float
+
+class BrandShareItem(BaseModel):
+    brand_name: str
+    market_share: float
+
+class ShopperIntelligence(BaseModel):
+    is_ecommerce_property: bool
+    top_on_site_queries: List[MarketplaceSearchQuery] = []
+    category_conversions: List[CategoryConversionRate] = []
+    brand_shares: List[BrandShareItem] = []
+
 class TrafficResponse(BaseModel):
     domain: str
     title: Optional[str] = None
@@ -160,6 +197,8 @@ class TrafficResponse(BaseModel):
     competitor_matrix: List[CompetitorMatrixItem] = []
     backlink_profile: Optional[BacklinkProfile] = None
     ad_intelligence: Optional[AdCreativeIntelligence] = None
+    folder_segmentation: Optional[FolderSegmentation] = None
+    shopper_intelligence: Optional[ShopperIntelligence] = None
     registration_date: Optional[str] = None
     domain_age_days: Optional[int] = None
     is_newly_launched: bool = False

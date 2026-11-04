@@ -6,6 +6,7 @@ import SocialDashboard from './components/SocialDashboard';
 import AudienceDashboard from './components/AudienceDashboard';
 import SiteAuditDashboard from './components/SiteAuditDashboard';
 import ComparisonView from './components/ComparisonView';
+import DownloadPortal from './components/DownloadPortal';
 import ExportReportModal from './components/ExportReportModal';
 import ConnectorsModal from './components/ConnectorsModal';
 import SettingsModal from './components/SettingsModal';
@@ -273,6 +274,10 @@ export default function App() {
 
         {activeTab === 'compare' && (
           <ComparisonView />
+        )}
+
+        {activeTab === 'downloads' && (
+          <DownloadPortal onNavigateTab={handleTabChange} />
         )}
       </main>
 

@@ -1,8 +1,9 @@
 import React from 'react';
 import {
   Globe, TrendingUp, Youtube, Users, GitCompare, Download,
-  Sparkles, ShieldCheck, Database, Settings, Sun, Moon
+  ShieldCheck, Database, Settings, Sun, Moon, Laptop
 } from 'lucide-react';
+import OmniLogo from './OmniLogo';
 
 export default function Navbar({
   activeTab,
@@ -20,6 +21,7 @@ export default function Navbar({
     { id: 'audience', label: 'Audience & Brand', icon: Users },
     { id: 'audit', label: 'Site Audit', icon: ShieldCheck },
     { id: 'compare', label: 'Compare', icon: GitCompare },
+    { id: 'downloads', label: 'Download App', icon: Laptop },
   ];
 
   return (
@@ -28,17 +30,8 @@ export default function Navbar({
         <div className="flex items-center justify-between h-16">
           
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-sky-500/25">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-extrabold tracking-tight text-lg text-slate-900 dark:text-white flex items-center gap-1.5">
-                Omni<span className="text-sky-600 dark:text-sky-400">Research</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-bold">PRO</span>
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block font-medium">All-in-One Market & Competitor Intelligence</div>
-            </div>
+          <div className="cursor-pointer" onClick={() => setActiveTab('traffic')}>
+            <OmniLogo showText={true} className="w-10 h-10" />
           </div>
 
           {/* Navigation Tabs */}
