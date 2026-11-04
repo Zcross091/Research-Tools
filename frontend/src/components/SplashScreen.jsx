@@ -1,37 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { checkForAppUpdates, APP_VERSION } from '../services/updater';
 import OmniLogo from './OmniLogo';
 
 export default function SplashScreen({ onFinish }) {
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('Initializing OmniResearch Suite...');
-  const updateResultRef = useRef(null);
 
   useEffect(() => {
-    const DURATION_MS = 4000; // Exact 4-second loading screen
-    const INTERVAL_MS = 40;
+    const DURATION_MS = 3000; // Smooth 3-second initialization
+    const INTERVAL_MS = 30;
     const increment = 100 / (DURATION_MS / INTERVAL_MS);
 
-    // 1. Simultaneously check for updates in the background without restarting the timer
-    checkForAppUpdates()
-      .then((res) => {
-        updateResultRef.current = res;
-      })
-      .catch((err) => {
-        console.warn('Startup update check error:', err);
-      });
-
-    // 2. Animate progress bar smoothly over 4000ms
+    // Animate progress bar smoothly
     const timer = setInterval(() => {
       setProgress((prev) => {
         const next = prev + increment;
 
-        // Dynamic status transitions over the 4 seconds
         if (next >= 25 && next < 65) {
-          setStatusMessage('Checking for verified software updates...');
-        } else if (next >= 65 && next < 90) {
           setStatusMessage('Calibrating real-time intelligence feeds...');
+        } else if (next >= 65 && next < 90) {
+          setStatusMessage('Validating local database cache...');
         } else if (next >= 90) {
           setStatusMessage('Ready! Loading dashboard...');
         }
@@ -40,7 +28,7 @@ export default function SplashScreen({ onFinish }) {
           clearInterval(timer);
           setTimeout(() => {
             if (onFinish) {
-              onFinish(updateResultRef.current);
+              onFinish();
             }
           }, 150);
           return 100;
@@ -76,12 +64,12 @@ export default function SplashScreen({ onFinish }) {
           </p>
           <div className="pt-1">
             <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-              v{APP_VERSION}
+              Enterprise Edition
             </span>
           </div>
         </div>
 
-        {/* 4-Second Animated Progress Bar */}
+        {/* 3-Second Animated Progress Bar */}
         <div className="w-full space-y-2 pt-2">
           <div className="w-full h-2.5 rounded-full bg-sky-100 dark:bg-slate-800 overflow-hidden p-0.5 border border-sky-200/50 dark:border-slate-700">
             <div 
@@ -101,7 +89,7 @@ export default function SplashScreen({ onFinish }) {
 
         {/* Helper Badge */}
         <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium pt-2">
-          Automatic in-place update engine enabled
+          Enterprise Intelligence Engine Active
         </div>
       </div>
     </div>

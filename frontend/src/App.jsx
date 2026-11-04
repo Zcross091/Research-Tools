@@ -67,20 +67,20 @@ export default function App() {
     handleSearchTraffic('stripe.com');
   }, []);
 
-  const handleSplashFinish = (result) => {
+  const handleSplashFinish = () => {
     setShowSplash(false);
-    if (result && result.hasUpdate) {
-      setUpdateInfo(result);
-      setIsUpdateModalOpen(true);
-    }
   };
 
   const handleManualCheckUpdate = async () => {
     setCheckingManualUpdate(true);
     try {
       const res = await checkForAppUpdates();
-      setUpdateInfo(res);
-      setIsUpdateModalOpen(true);
+      if (res && res.hasUpdate) {
+        setUpdateInfo(res);
+        setIsUpdateModalOpen(true);
+      } else {
+        alert('OmniResearch PRO is currently up to date with the latest enterprise release.');
+      }
     } catch (e) {
       console.warn(e);
     } finally {
@@ -293,7 +293,7 @@ export default function App() {
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-slate-700 hover:bg-sky-50 transition-all shadow-xs"
             >
               <RefreshCw className={`w-3 h-3 ${checkingManualUpdate ? 'animate-spin' : ''}`} />
-              <span>v{APP_VERSION} • Check for Updates</span>
+              <span>Check for Updates</span>
             </button>
             <span className="text-[11px] font-mono text-sky-700 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
               Verified Data Engine

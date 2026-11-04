@@ -1,11 +1,10 @@
-export const APP_VERSION = '1.0.2';
+export const APP_VERSION = '1.0.11';
 
 /**
- * Checks GitHub Releases for a newer version of the application.
+ * Checks for a newer enterprise build of the application.
  * Returns { hasUpdate: boolean, latestVersion: string, releaseNotes: string, apkUrl: string, exeUrl: string }
  */
 export async function checkForAppUpdates(repo = 'Zcross091/Research-Tools') {
-  // Allow overriding repository from environment variable
   const targetRepo = import.meta.env.VITE_GITHUB_REPO || repo;
   const apiUrl = `https://api.github.com/repos/${targetRepo}/releases/latest`;
 
@@ -17,7 +16,6 @@ export async function checkForAppUpdates(repo = 'Zcross091/Research-Tools') {
     });
 
     if (!response.ok) {
-      // If repo does not exist yet or rate limited, return current state gracefully
       return {
         hasUpdate: false,
         currentVersion: APP_VERSION,
@@ -33,8 +31,8 @@ export async function checkForAppUpdates(repo = 'Zcross091/Research-Tools') {
     // Compare versions (semver style: e.g. 1.0.1 > 1.0.0)
     const isNewer = compareVersions(latestVersion, APP_VERSION) > 0;
 
-    let apkUrl = '';
-    let exeUrl = '';
+    let apkUrl = '/downloads/OmniResearch-PRO.apk';
+    let exeUrl = '/downloads/OmniResearch-PRO-Setup.exe';
 
     if (Array.isArray(data.assets)) {
       const apkAsset = data.assets.find(a => a.name.endsWith('.apk'));
@@ -43,16 +41,28 @@ export async function checkForAppUpdates(repo = 'Zcross091/Research-Tools') {
       if (exeAsset) exeUrl = exeAsset.browser_download_url;
     }
 
+    // Sanitize release notes: remove raw git diff URLs, compare tags, and commit hashes
+    let notes = (data.body || '')
+      .replace(/https?:\/\/github\.com[^\s\)]+/gi, '')
+      .replace(/\*\*Full Changelog\*\*:[^\n]*/gi, '')
+      .replace(/\*\*Download[^\n]*/gi, '')
+      .replace(/compare\/v[^\n]*/gi, '')
+      .trim();
+
+    if (!notes) {
+      notes = 'Includes performance optimizations, real-time intelligence engine upgrades, and stability enhancements.';
+    }
+
     return {
       hasUpdate: isNewer,
       currentVersion: APP_VERSION,
       latestVersion: latestVersion || APP_VERSION,
-      releaseName: data.name || `Release ${latestVersion}`,
-      releaseNotes: data.body || 'New features, performance enhancements, and bug fixes.',
+      releaseName: data.name || `OmniResearch PRO v${latestVersion}`,
+      releaseNotes: notes,
       publishedAt: data.published_at,
-      apkUrl: apkUrl || data.html_url,
-      exeUrl: exeUrl || data.html_url,
-      htmlUrl: data.html_url
+      apkUrl,
+      exeUrl,
+      htmlUrl: ''
     };
   } catch (err) {
     console.warn('[Updater] Could not check for updates:', err.message);
