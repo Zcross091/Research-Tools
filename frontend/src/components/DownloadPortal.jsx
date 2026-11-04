@@ -29,7 +29,7 @@ export default function DownloadPortal({ onNavigateTab }) {
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-50 dark:bg-slate-800 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-slate-700 text-xs font-bold shadow-xs">
           <Sparkles className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-          <span>v1.0.4 • Latest Enterprise Production Release</span>
+          <span>Enterprise Production Edition</span>
         </div>
 
         <div className="flex justify-center pt-2">
@@ -86,14 +86,14 @@ export default function DownloadPortal({ onNavigateTab }) {
 
           <div className="space-y-2">
             <button
-              onClick={() => handleDownloadTrigger('pc', 'OmniResearch-PRO-Setup-v1.0.4.exe', '/downloads/OmniResearch-PRO-Setup-v1.0.4.exe')}
+              onClick={() => handleDownloadTrigger('pc', 'OmniResearch-PRO-Setup.exe', '/downloads/OmniResearch-PRO-Setup.exe')}
               className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-2xl transition-all shadow-md shadow-sky-600/20 flex items-center justify-center gap-2 active:scale-95"
             >
               <Download className="w-4 h-4" />
               <span>{downloading === 'pc' ? 'Starting Download...' : 'Download PC Installer (.exe)'}</span>
             </button>
             <div className="text-[11px] text-slate-400 dark:text-slate-500 text-center font-mono">
-              Version 1.0.4 • Setup Executable • 85 MB
+              Setup Executable • 64-bit Windows
             </div>
           </div>
         </div>
@@ -135,14 +135,14 @@ export default function DownloadPortal({ onNavigateTab }) {
 
           <div className="space-y-2">
             <button
-              onClick={() => handleDownloadTrigger('portable', 'OmniResearch-PRO-Portable-v1.0.4.zip', '/downloads/OmniResearch-PRO-Portable-v1.0.4.zip')}
+              onClick={() => handleDownloadTrigger('portable', 'OmniResearch-PRO-Portable.zip', '/downloads/OmniResearch-PRO-Portable.zip')}
               className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-2xl transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 active:scale-95"
             >
               <Download className="w-4 h-4" />
               <span>{downloading === 'portable' ? 'Starting Download...' : 'Download Portable Edition (.zip)'}</span>
             </button>
             <div className="text-[11px] text-slate-400 dark:text-slate-500 text-center font-mono">
-              Version 1.0.4 • Zip Archive • 92 MB
+              Portable Package • Zero Install
             </div>
           </div>
         </div>
@@ -184,14 +184,14 @@ export default function DownloadPortal({ onNavigateTab }) {
 
           <div className="space-y-2">
             <button
-              onClick={() => handleDownloadTrigger('mobile', 'OmniResearch-PRO-v1.0.4.apk', '/downloads/OmniResearch-PRO-v1.0.4.apk')}
+              onClick={() => handleDownloadTrigger('mobile', 'OmniResearch-PRO.apk', '/downloads/OmniResearch-PRO.apk')}
               className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-2xl transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 active:scale-95"
             >
               <Download className="w-4 h-4" />
               <span>{downloading === 'mobile' ? 'Starting Download...' : 'Download Android App (.apk)'}</span>
             </button>
             <div className="text-[11px] text-slate-400 dark:text-slate-500 text-center font-mono">
-              Version 1.0.4 • APK Package • 24 MB
+              Android Package • Release Signed
             </div>
           </div>
         </div>
