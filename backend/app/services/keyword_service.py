@@ -142,7 +142,7 @@ async def analyze_keyword(query_raw: str) -> KeywordResponse:
             KeywordVariationItem(keyword=f"{query} pricing guide", volume=int(volume * 0.22), difficulty=min(90, difficulty + 5), cpc=round(cpc * 1.5, 2), intent="Commercial"),
             KeywordVariationItem(keyword=f"how to learn {query}", volume=int(volume * 0.18), difficulty=max(12, difficulty - 14), cpc=round(cpc * 0.6, 2), intent="Informational"),
             KeywordVariationItem(keyword=f"{query} api integration", volume=int(volume * 0.14), difficulty=difficulty, cpc=round(cpc * 1.2, 2), intent="Commercial"),
-            KeywordVariationItem(keyword=f"open source {query}", volume=int(volume * 0.12), difficulty=max(15, difficulty - 8), cpc=round(cpc * 0.5, 2), intent="Informational")
+            KeywordVariationItem(keyword=f"best {query} tools", volume=int(volume * 0.12), difficulty=max(15, difficulty - 8), cpc=round(cpc * 0.5, 2), intent="Informational")
         ],
         related=[
             KeywordVariationItem(keyword=f"{query} vs competitor", volume=int(volume * 0.24), difficulty=difficulty + 4, cpc=round(cpc * 1.4, 2), intent="Commercial"),
@@ -154,7 +154,7 @@ async def analyze_keyword(query_raw: str) -> KeywordResponse:
     # Rising / Breakout queries
     breakout_queries = [
         RisingQuery(query=f"{query} ai agent", growth="+450%"),
-        RisingQuery(query=f"best free {query}", growth="+280%"),
+        RisingQuery(query=f"top rated {query}", growth="+280%"),
         RisingQuery(query=f"{query} automation 2026", growth="Breakout"),
         RisingQuery(query=f"{query} vs alternatives", growth="+140%"),
     ]
@@ -190,7 +190,7 @@ async def analyze_keyword(query_raw: str) -> KeywordResponse:
         untapped_keywords=[
             KeywordGapItem(keyword=f"automated {query} workflow", volume=int(volume * 0.32), kd=28, cpc=round(cpc * 1.4, 2), intent="Transactional", your_rank=None, competitor_rank=None, gap_type="untapped"),
             KeywordGapItem(keyword=f"{query} for remote engineering teams", volume=int(volume * 0.22), kd=22, cpc=round(cpc * 1.1, 2), intent="Commercial", your_rank=None, competitor_rank=None, gap_type="untapped"),
-            KeywordGapItem(keyword=f"open source {query} alternatives 2026", volume=int(volume * 0.45), kd=34, cpc=round(cpc * 0.8, 2), intent="Informational", your_rank=None, competitor_rank=None, gap_type="untapped")
+            KeywordGapItem(keyword=f"top {query} software alternatives 2026", volume=int(volume * 0.45), kd=34, cpc=round(cpc * 0.8, 2), intent="Informational", your_rank=None, competitor_rank=None, gap_type="untapped")
         ]
     )
 
