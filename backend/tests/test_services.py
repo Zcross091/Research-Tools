@@ -4,7 +4,9 @@ from app.services.traffic_service import clean_domain, derive_domain_metrics, an
 from app.services.keyword_service import analyze_keyword
 from app.services.social_service import analyze_creator, extract_video_id
 from app.services.audience_service import analyze_audience
-from app.database import init_db
+from app.services.connector_service import parse_gsc_csv, parse_ga4_csv, get_first_party_summary
+from app.services.site_audit_crawler import audit_domain_site
+from app.database import init_db, save_setting, get_all_settings
 
 @pytest.fixture(autouse=True)
 def setup_test_db():
@@ -104,3 +106,31 @@ def test_analyze_audience():
     assert len(res.pain_points) > 0
     assert len(res.top_hashtags) > 0
     assert len(res.viral_articles) > 0
+
+def test_gsc_and_ga4_csv_parsing():
+    sample_gsc_csv = "Top queries,Clicks,Impressions,CTR,Position\nstripe pricing,120,2400,5.0%,1.2\nstripe login,80,1600,5.0%,1.1"
+    parsed_gsc = parse_gsc_csv(sample_gsc_csv, "stripe.com")
+    assert parsed_gsc["total_clicks"] == 200
+    assert parsed_gsc["total_impressions"] == 4000
+    assert len(parsed_gsc["queries"]) == 2
+
+    sample_ga4_csv = "Page path,Sessions,Active users\n/,15000,12000\n/pricing,4000,3200"
+    parsed_ga4 = parse_ga4_csv(sample_ga4_csv, "stripe.com")
+    assert parsed_ga4["monthly_sessions"] == 19000
+
+    summary = get_first_party_summary("stripe.com")
+    assert summary.has_gsc_connected is True
+    assert summary.has_ga4_connected is True
+    assert summary.gsc_total_clicks == 200
+    assert summary.ga4_monthly_sessions == 19000
+
+def test_site_audit_crawler():
+    res = asyncio.run(audit_domain_site("stripe.com", max_pages=3))
+    assert res.domain == "stripe.com"
+    assert res.health_score > 0
+    assert res.total_pages_crawled > 0
+
+def test_settings_and_keys():
+    save_setting("dataforseo_login", "testuser@example.com")
+    all_settings = get_all_settings()
+    assert all_settings.get("dataforseo_login") == "testuser@example.com"

@@ -4,39 +4,62 @@ import TrafficDashboard from './components/TrafficDashboard';
 import KeywordDashboard from './components/KeywordDashboard';
 import SocialDashboard from './components/SocialDashboard';
 import AudienceDashboard from './components/AudienceDashboard';
+import SiteAuditDashboard from './components/SiteAuditDashboard';
 import ComparisonView from './components/ComparisonView';
 import ExportReportModal from './components/ExportReportModal';
+import ConnectorsModal from './components/ConnectorsModal';
+import SettingsModal from './components/SettingsModal';
 import SplashScreen from './components/SplashScreen';
 import UpdateModal from './components/UpdateModal';
 import StateCraftBadge from './components/StateCraftBadge';
 import { checkForAppUpdates, APP_VERSION } from './services/updater';
 import { 
   fetchTraffic, fetchKeywords, fetchSocial, 
-  fetchAudience, fetchVideoTags 
+  fetchAudience, fetchVideoTags, runSiteAudit, fetchSiteAuditResults
 } from './services/api';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('traffic');
   
+  // Dark Mode Theme state
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('theme_dark') === 'true';
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme_dark', 'true');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme_dark', 'false');
+    }
+  }, [isDarkMode]);
+
   // Splash & Update states
   const [showSplash, setShowSplash] = useState(true);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [checkingManualUpdate, setCheckingManualUpdate] = useState(false);
 
+  // Modal visibility states
+  const [isConnectorsOpen, setIsConnectorsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+
   // Data states
   const [trafficData, setTrafficData] = useState(null);
   const [keywordsData, setKeywordsData] = useState(null);
   const [socialData, setSocialData] = useState(null);
   const [audienceData, setAudienceData] = useState(null);
+  const [auditData, setAuditData] = useState(null);
   const [tagAnalysis, setTagAnalysis] = useState(null);
 
   // Loading & error states
   const [loading, setLoading] = useState(false);
   const [tagLoading, setTagLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isExportOpen, setIsExportOpen] = useState(false);
 
   // Load initial representative baseline data on mount
   useEffect(() => {
@@ -132,6 +155,19 @@ export default function App() {
     }
   };
 
+  const handleRunSiteAudit = async (domain) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await runSiteAudit(domain);
+      setAuditData(res);
+    } catch (err) {
+      setError(err.message || 'Failed to perform site audit.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     setError(null);
@@ -141,6 +177,8 @@ export default function App() {
       handleSearchSocial('mrbeast');
     } else if (tabId === 'audience' && !audienceData) {
       handleSearchAudience('b2b saas');
+    } else if (tabId === 'audit' && !auditData) {
+      handleRunSiteAudit('stripe.com');
     }
   };
 
@@ -149,6 +187,7 @@ export default function App() {
     if (activeTab === 'keywords') return keywordsData;
     if (activeTab === 'social') return socialData;
     if (activeTab === 'audience') return audienceData;
+    if (activeTab === 'audit') return auditData;
     return null;
   };
 
@@ -158,12 +197,16 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0f7ff] text-slate-800 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#f0f7ff] dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* Top Navigation */}
       <Navbar 
         activeTab={activeTab} 
         setActiveTab={handleTabChange} 
-        onOpenExport={() => setIsExportOpen(true)} 
+        onOpenExport={() => setIsExportOpen(true)}
+        onOpenConnectors={() => setIsConnectorsOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
       />
 
       {/* Main Container */}
@@ -220,26 +263,34 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'audit' && (
+          <SiteAuditDashboard
+            auditData={auditData}
+            loading={loading}
+            onRunAudit={handleRunSiteAudit}
+          />
+        )}
+
         {activeTab === 'compare' && (
           <ComparisonView />
         )}
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-sky-100 bg-white/70 backdrop-blur-sm py-6 text-center text-xs text-slate-500 font-medium">
+      <footer className="border-t border-sky-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm py-6 text-center text-xs text-slate-500 dark:text-slate-400 font-medium">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div>OmniResearch Suite • Similarweb, SocialBlade, vidIQ, SparkToro & Google Trends</div>
+          <div>OmniResearch Suite • Similarweb, SocialBlade, vidIQ, SparkToro, Ahrefs & Site Audit</div>
           
           <div className="flex items-center gap-2">
             <button
               onClick={handleManualCheckUpdate}
               disabled={checkingManualUpdate}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white text-sky-700 border border-sky-200 hover:bg-sky-50 transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-slate-700 hover:bg-sky-50 transition-all shadow-xs"
             >
               <RefreshCw className={`w-3 h-3 ${checkingManualUpdate ? 'animate-spin' : ''}`} />
               <span>v{APP_VERSION} • Check for Updates</span>
             </button>
-            <span className="text-[11px] font-mono text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+            <span className="text-[11px] font-mono text-sky-700 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
               Verified Data Engine
             </span>
           </div>
@@ -252,6 +303,19 @@ export default function App() {
         onClose={() => setIsExportOpen(false)}
         activeTab={activeTab}
         currentData={getCurrentData()}
+      />
+
+      {/* First-Party Connectors Modal */}
+      <ConnectorsModal
+        isOpen={isConnectorsOpen}
+        onClose={() => setIsConnectorsOpen(false)}
+        currentDomain={trafficData ? trafficData.domain : 'stripe.com'}
+      />
+
+      {/* Settings / API Keys Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
 
       {/* In-App Update Modal */}

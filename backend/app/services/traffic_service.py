@@ -1,3 +1,19 @@
+"""
+Traffic Service Module
+======================
+This module provides services for analyzing website traffic, global and country rankings,
+audience demographics, technology stacks, organic/paid keyword profiles, backlink authority,
+and display advertising intelligence.
+
+Key capabilities:
+- Normalizing domain input strings.
+- Querying ICANN RDAP registry for domain creation dates and age calculation.
+- Querying the Tranco Top 1 Million index for verified global domain rankings.
+- Integrating DataForSEO API live backlink profiles when credentials are present.
+- Integrating Google Search Console & GA4 first-party uploaded data.
+- Caching analysis results in SQLite database cache.
+"""
+
 import hashlib
 import time
 import httpx
@@ -13,7 +29,10 @@ from app.models.schemas import (
     ConfidenceMeta
 )
 from app.services.tech_detector import detect_technologies
-from app.database import get_cache, set_cache
+from app.services.dataforseo_adapter import fetch_dataforseo_backlinks
+from app.services.connector_service import get_first_party_summary
+from app.database import get_cache, set_cache, get_all_settings
+from app.config import DATAFORSEO_LOGIN, DATAFORSEO_PASSWORD
 
 # Known domain baselines for gold-standard calibration
 VERIFIED_BENCHMARKS = {
@@ -30,7 +49,9 @@ VERIFIED_BENCHMARKS = {
 }
 
 def clean_domain(domain: str) -> str:
-    """Normalize input domain string."""
+    """
+    Normalizes an input domain string by stripping protocols, 'www' prefixes, paths, and query parameters.
+    """
     d = domain.strip().lower()
     if d.startswith("http://"):
         d = d[7:]
@@ -42,8 +63,7 @@ def clean_domain(domain: str) -> str:
 
 async def fetch_domain_registration_info(domain: str) -> Tuple[Optional[str], Optional[int]]:
     """
-    Queries ICANN RDAP to discover the authentic domain registration date
-    and calculate exact domain age in days.
+    Queries ICANN RDAP protocol to discover authentic domain registration date and calculate age.
     """
     try:
         async with httpx.AsyncClient(timeout=4.0, follow_redirects=True) as client:
@@ -64,7 +84,9 @@ async def fetch_domain_registration_info(domain: str) -> Tuple[Optional[str], Op
     return None, None
 
 async def fetch_tranco_global_rank(domain: str) -> Optional[int]:
-    """Queries official Tranco Top 1 Million list."""
+    """
+    Queries the official Tranco Top 1 Million list API to get domain's global rank.
+    """
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
             resp = await client.get(f"https://tranco-list.eu/api/ranks/domain/{domain}")
@@ -77,7 +99,9 @@ async def fetch_tranco_global_rank(domain: str) -> Optional[int]:
     return None
 
 async def derive_domain_metrics(domain: str) -> Dict[str, Any]:
-    """Derives mathematically calibrated traffic and ranking metrics."""
+    """
+    Derives calibrated traffic and ranking metrics for a target domain.
+    """
     if domain in VERIFIED_BENCHMARKS:
         bm = VERIFIED_BENCHMARKS[domain]
         return {
@@ -168,18 +192,30 @@ async def derive_domain_metrics(domain: str) -> Dict[str, Any]:
     }
 
 async def analyze_domain_traffic(domain_raw: str) -> TrafficResponse:
-    """Analyze website traffic, channels, tech stack, and audience geographies."""
+    """
+    Performs full traffic analysis for a domain, synthesizing ranking, tech stack,
+    traffic acquisition channels, geographic distributions, organic/paid search terms,
+    backlink profiles, and display advertising metadata.
+    """
     domain = clean_domain(domain_raw)
     cache_key = f"traffic:{domain}"
     
     cached = get_cache(cache_key)
-    if cached and cached.get("backlink_profile") and cached.get("ad_intelligence"):
+    if cached:
         try:
             return TrafficResponse(**cached)
         except Exception:
             pass
 
     metrics = await derive_domain_metrics(domain)
+
+    # Check First-Party Data Connector (GSC & GA4)
+    first_party = get_first_party_summary(domain)
+    if first_party.has_ga4_connected and first_party.ga4_monthly_sessions > 0:
+        metrics["visits"] = first_party.ga4_monthly_sessions
+        metrics["source"] = "Verified First-Party Data (Google Analytics 4)"
+        metrics["confidence"] = 100
+
     tech_stack, title, description = await detect_technologies(domain)
     seed = int(hashlib.md5(domain.encode()).hexdigest()[:8], 16)
     base_visits = metrics["visits"]
@@ -254,18 +290,32 @@ async def analyze_domain_traffic(domain_raw: str) -> TrafficResponse:
         CountryTraffic(country="Japan", code="JP", percentage=1.9, visits=int(base_visits * 0.019), bounce_rate=round(metrics["bounce"] - 1.0, 1)),
     ]
 
-    # 5. Top Organic & Paid Keywords
+    # 5. Top Organic & Paid Keywords (Merge GSC query data if present)
     base_name = domain.split(".")[0]
-    top_organic_keywords = [
-        SearchKeywordItem(keyword=f"{base_name}", volume=max(1200, int(base_visits * 0.18)), traffic_share=28.4, position=1, cpc=2.45),
-        SearchKeywordItem(keyword=f"{base_name} login", volume=max(800, int(base_visits * 0.09)), traffic_share=14.2, position=1, cpc=0.85),
-        SearchKeywordItem(keyword=f"{base_name} pricing", volume=max(600, int(base_visits * 0.06)), traffic_share=9.1, position=1, cpc=4.20),
-        SearchKeywordItem(keyword=f"{base_name} alternatives", volume=max(450, int(base_visits * 0.04)), traffic_share=6.5, position=2, cpc=3.80),
-        SearchKeywordItem(keyword=f"{base_name} api documentation", volume=max(350, int(base_visits * 0.03)), traffic_share=4.8, position=1, cpc=1.90),
-        SearchKeywordItem(keyword=f"best {metrics['category'].split('&')[0].strip().lower()}", volume=max(1500, int(base_visits * 0.05)), traffic_share=4.2, position=3, cpc=5.10),
-        SearchKeywordItem(keyword=f"{base_name} reviews 2026", volume=max(300, int(base_visits * 0.025)), traffic_share=3.6, position=2, cpc=2.10),
-        SearchKeywordItem(keyword=f"how to use {base_name}", volume=max(250, int(base_visits * 0.02)), traffic_share=2.8, position=1, cpc=1.45)
-    ]
+    top_organic_keywords: List[SearchKeywordItem] = []
+
+    if first_party.has_gsc_connected and first_party.top_gsc_queries:
+        for gq in first_party.top_gsc_queries[:8]:
+            top_organic_keywords.append(SearchKeywordItem(
+                keyword=gq.query,
+                volume=gq.impressions,
+                traffic_share=round((gq.clicks / max(1, first_party.gsc_total_clicks)) * 100, 1),
+                position=int(gq.position),
+                cpc=2.10
+            ))
+
+    if not top_organic_keywords:
+        top_organic_keywords = [
+            SearchKeywordItem(keyword=f"{base_name}", volume=max(1200, int(base_visits * 0.18)), traffic_share=28.4, position=1, cpc=2.45),
+            SearchKeywordItem(keyword=f"{base_name} login", volume=max(800, int(base_visits * 0.09)), traffic_share=14.2, position=1, cpc=0.85),
+            SearchKeywordItem(keyword=f"{base_name} pricing", volume=max(600, int(base_visits * 0.06)), traffic_share=9.1, position=1, cpc=4.20),
+            SearchKeywordItem(keyword=f"{base_name} alternatives", volume=max(450, int(base_visits * 0.04)), traffic_share=6.5, position=2, cpc=3.80),
+            SearchKeywordItem(keyword=f"{base_name} api documentation", volume=max(350, int(base_visits * 0.03)), traffic_share=4.8, position=1, cpc=1.90),
+            SearchKeywordItem(keyword=f"best {metrics['category'].split('&')[0].strip().lower()}", volume=max(1500, int(base_visits * 0.05)), traffic_share=4.2, position=3, cpc=5.10),
+            SearchKeywordItem(keyword=f"{base_name} reviews 2026", volume=max(300, int(base_visits * 0.025)), traffic_share=3.6, position=2, cpc=2.10),
+            SearchKeywordItem(keyword=f"how to use {base_name}", volume=max(250, int(base_visits * 0.02)), traffic_share=2.8, position=1, cpc=1.45)
+        ]
+
     top_paid_keywords = [
         PaidKeywordItem(keyword=f"{base_name} enterprise", volume=max(400, int(base_visits * 0.03)), traffic_share=38.5, cpc=8.50),
         PaidKeywordItem(keyword=f"{base_name} competitors", volume=max(300, int(base_visits * 0.02)), traffic_share=24.0, cpc=6.20),
@@ -340,40 +390,47 @@ async def analyze_domain_traffic(domain_raw: str) -> TrafficResponse:
         CompetitorMatrixItem(domain=competitor_domains[3], similarity=71, global_rank=max(1, metrics["global_rank"] + 240), monthly_visits=int(base_visits * 0.42), shared_keywords=640, category=metrics["category"])
     ]
 
-    # 11. Backlinks & Authority Profile (Ahrefs Style)
-    dr_score = 92 if domain in VERIFIED_BENCHMARKS else (15 if is_new else max(25, min(88, int(95 - (max(1, metrics["global_rank"]) ** 0.32)))))
-    total_bl = int(max(45, base_visits * 1.85)) if not is_new else 12
-    ref_doms = int(max(10, total_bl * 0.08)) if not is_new else 3
-    ref_ips = int(ref_doms * 0.85)
+    # 11. Backlinks & Authority Profile (Check DataForSEO Adapter first)
+    saved_settings = get_all_settings()
+    dfs_login = saved_settings.get("dataforseo_login") or DATAFORSEO_LOGIN
+    dfs_pass = saved_settings.get("dataforseo_password") or DATAFORSEO_PASSWORD
 
-    backlink_profile = BacklinkProfile(
-        domain_rating=dr_score,
-        url_rating=min(100, dr_score + 4),
-        total_backlinks=total_bl,
-        referring_domains=ref_doms,
-        referring_ips=ref_ips,
-        dofollow_ratio=84.2 if not is_new else 60.0,
-        tld_distribution=[
-            {"tld": ".com", "percentage": 72.4},
-            {"tld": ".org", "percentage": 11.8},
-            {"tld": ".io / .ai", "percentage": 9.2},
-            {"tld": ".edu / .gov", "percentage": 3.8},
-            {"tld": "Others", "percentage": 2.8}
-        ],
-        top_anchors=[
-            AnchorTextItem(anchor=base_name, percentage=34.5, backlinks_count=int(total_bl * 0.345)),
-            AnchorTextItem(anchor=f"visit {domain}", percentage=18.2, backlinks_count=int(total_bl * 0.182)),
-            AnchorTextItem(anchor=f"{base_name} platform", percentage=12.4, backlinks_count=int(total_bl * 0.124)),
-            AnchorTextItem(anchor="official website", percentage=8.1, backlinks_count=int(total_bl * 0.081)),
-            AnchorTextItem(anchor="learn more", percentage=6.5, backlinks_count=int(total_bl * 0.065))
-        ],
-        top_linked_pages=[
-            TopLinkedPageItem(path="/", backlinks=int(total_bl * 0.58), referring_domains=int(ref_doms * 0.62)),
-            TopLinkedPageItem(path="/pricing", backlinks=int(total_bl * 0.16), referring_domains=int(ref_doms * 0.18)),
-            TopLinkedPageItem(path="/docs", backlinks=int(total_bl * 0.12), referring_domains=int(ref_doms * 0.14)),
-            TopLinkedPageItem(path="/blog", backlinks=int(total_bl * 0.08), referring_domains=int(ref_doms * 0.09))
-        ]
-    )
+    backlink_profile = await fetch_dataforseo_backlinks(domain, dfs_login, dfs_pass)
+
+    if not backlink_profile:
+        dr_score = 92 if domain in VERIFIED_BENCHMARKS else (15 if is_new else max(25, min(88, int(95 - (max(1, metrics["global_rank"]) ** 0.32)))))
+        total_bl = int(max(45, base_visits * 1.85)) if not is_new else 12
+        ref_doms = int(max(10, total_bl * 0.08)) if not is_new else 3
+        ref_ips = int(ref_doms * 0.85)
+
+        backlink_profile = BacklinkProfile(
+            domain_rating=dr_score,
+            url_rating=min(100, dr_score + 4),
+            total_backlinks=total_bl,
+            referring_domains=ref_doms,
+            referring_ips=ref_ips,
+            dofollow_ratio=84.2 if not is_new else 60.0,
+            tld_distribution=[
+                {"tld": ".com", "percentage": 72.4},
+                {"tld": ".org", "percentage": 11.8},
+                {"tld": ".io / .ai", "percentage": 9.2},
+                {"tld": ".edu / .gov", "percentage": 3.8},
+                {"tld": "Others", "percentage": 2.8}
+            ],
+            top_anchors=[
+                AnchorTextItem(anchor=base_name, percentage=34.5, backlinks_count=int(total_bl * 0.345)),
+                AnchorTextItem(anchor=f"visit {domain}", percentage=18.2, backlinks_count=int(total_bl * 0.182)),
+                AnchorTextItem(anchor=f"{base_name} platform", percentage=12.4, backlinks_count=int(total_bl * 0.124)),
+                AnchorTextItem(anchor="official website", percentage=8.1, backlinks_count=int(total_bl * 0.081)),
+                AnchorTextItem(anchor="learn more", percentage=6.5, backlinks_count=int(total_bl * 0.065))
+            ],
+            top_linked_pages=[
+                TopLinkedPageItem(path="/", backlinks=int(total_bl * 0.58), referring_domains=int(ref_doms * 0.62)),
+                TopLinkedPageItem(path="/pricing", backlinks=int(total_bl * 0.16), referring_domains=int(ref_doms * 0.18)),
+                TopLinkedPageItem(path="/docs", backlinks=int(total_bl * 0.12), referring_domains=int(ref_doms * 0.14)),
+                TopLinkedPageItem(path="/blog", backlinks=int(total_bl * 0.08), referring_domains=int(ref_doms * 0.09))
+            ]
+        )
 
     # 12. Display Ads & Creatives Intelligence (Similarweb Ads Style)
     ad_intelligence = AdCreativeIntelligence(

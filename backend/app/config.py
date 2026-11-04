@@ -9,3 +9,7 @@ DEFAULT_CACHE_TTL_HOURS = 24
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
 CRUX_API_KEY = os.getenv("CRUX_API_KEY", "")
 
+# Enterprise 3rd-party API credentials
+DATAFORSEO_LOGIN = os.getenv("DATAFORSEO_LOGIN", "")
+DATAFORSEO_PASSWORD = os.getenv("DATAFORSEO_PASSWORD", "")
+AHREFS_API_KEY = os.getenv("AHREFS_API_KEY", "")

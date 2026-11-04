@@ -415,3 +415,75 @@ class AudienceResponse(BaseModel):
     key_topics: List[str]
     demographic_profile: Dict[str, Any]
     confidence: ConfidenceMeta
+
+# ----------------- SITE AUDIT & CRAWLER SCHEMAS -----------------
+
+class IssueItem(BaseModel):
+    issue_type: str  # 'Error' | 'Warning' | 'Notice'
+    category: str  # 'Canonical' | 'Broken Link' | 'Title/Meta' | 'SSL/Security' | 'Heading'
+    title: str
+    description: str
+    affected_url: str
+
+class LinkCheckResult(BaseModel):
+    url: str
+    anchor_text: str
+    status_code: int
+    is_internal: bool
+
+class CrawledPageItem(BaseModel):
+    url: str
+    status_code: int
+    page_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    canonical_url: Optional[str] = None
+    h1_tag: Optional[str] = None
+    internal_links_count: int = 0
+    external_links_count: int = 0
+    images_missing_alt: int = 0
+    issues: List[IssueItem] = []
+
+class SiteAuditResponse(BaseModel):
+    domain: str
+    health_score: int  # 0 to 100
+    health_grade: str  # 'A+' | 'A' | 'B' | 'C' | 'Needs Attention'
+    total_pages_crawled: int
+    status_summary: Dict[str, int]  # e.g. {"200": 24, "301": 2, "404": 1, "500": 0}
+    issue_counts: Dict[str, int]  # e.g. {"errors": 2, "warnings": 5, "notices": 8}
+    crawled_pages: List[CrawledPageItem] = []
+    top_issues: List[IssueItem] = []
+    scan_timestamp: str
+
+# ----------------- CONNECTORS & SETTINGS SCHEMAS -----------------
+
+class GscQueryItem(BaseModel):
+    query: str
+    clicks: int
+    impressions: int
+    ctr: float
+    position: float
+
+class FirstPartySummaryResponse(BaseModel):
+    domain: str
+    has_gsc_connected: bool
+    has_ga4_connected: bool
+    gsc_total_clicks: int = 0
+    gsc_total_impressions: int = 0
+    gsc_avg_ctr: float = 0.0
+    gsc_avg_position: float = 0.0
+    top_gsc_queries: List[GscQueryItem] = []
+    ga4_monthly_sessions: int = 0
+    ga4_active_users: int = 0
+    updated_at: Optional[str] = None
+
+class ApiKeysSettingPayload(BaseModel):
+    dataforseo_login: Optional[str] = ""
+    dataforseo_password: Optional[str] = ""
+    ahrefs_api_key: Optional[str] = ""
+    crux_api_key: Optional[str] = ""
+
+class ApiKeysStatusResponse(BaseModel):
+    has_dataforseo: bool
+    has_ahrefs: bool
+    has_crux: bool
+    dataforseo_login_partial: Optional[str] = ""

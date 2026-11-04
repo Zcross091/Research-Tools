@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { 
-  GitCompare, Globe, Users, TrendingUp, Monitor, 
-  ArrowUpRight, Award, Plus, Trash2, CheckCircle2 
+  GitCompare, Globe, Users, TrendingUp, ShieldCheck,
+  ArrowUpRight, Award, Plus, Trash2, CheckCircle2, AlertTriangle, AlertCircle
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend 
 } from 'recharts';
-import { fetchTraffic, fetchKeywords } from '../services/api';
+import { fetchTraffic, fetchKeywords, runSiteAudit } from '../services/api';
 import KeywordGapExplorer from './KeywordGapExplorer';
 
 const TARGET_COLORS = ['#0284c7', '#6366f1', '#10b981', '#f59e0b'];
 
 export default function ComparisonView() {
-  const [mode, setMode] = useState('domains'); // 'domains' | 'keywords'
+  const [mode, setMode] = useState('domains'); // 'domains' | 'keywords' | 'audits'
   const [targets, setTargets] = useState(['stripe.com', 'shopify.com', 'paypal.com']);
   const [newTargetInput, setNewTargetInput] = useState('');
   const [results, setResults] = useState([]);
@@ -42,8 +42,12 @@ export default function ComparisonView() {
         const promises = targets.map(t => fetchTraffic(t));
         const res = await Promise.all(promises);
         setResults(res);
-      } else {
+      } else if (mode === 'keywords') {
         const promises = targets.map(t => fetchKeywords(t));
+        const res = await Promise.all(promises);
+        setResults(res);
+      } else if (mode === 'audits') {
+        const promises = targets.map(t => runSiteAudit(t, 15));
         const res = await Promise.all(promises);
         setResults(res);
       }
@@ -76,7 +80,7 @@ export default function ComparisonView() {
           <div className="flex items-center gap-1.5 bg-sky-50 p-1.5 rounded-2xl border border-sky-200">
             <button
               onClick={() => { setMode('domains'); setResults([]); setTargets(['stripe.com', 'shopify.com', 'paypal.com']); }}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 mode === 'domains' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-600 hover:text-sky-700'
               }`}
             >
@@ -84,11 +88,19 @@ export default function ComparisonView() {
             </button>
             <button
               onClick={() => { setMode('keywords'); setResults([]); setTargets(['react', 'vue', 'angular']); }}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 mode === 'keywords' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-600 hover:text-sky-700'
               }`}
             >
               Compare Keywords
+            </button>
+            <button
+              onClick={() => { setMode('audits'); setResults([]); setTargets(['stripe.com', 'shopify.com', 'paypal.com']); }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                mode === 'audits' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-600 hover:text-sky-700'
+              }`}
+            >
+              Compare Site Audits
             </button>
           </div>
         </div>
@@ -115,7 +127,7 @@ export default function ComparisonView() {
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder={mode === 'domains' ? "+ Add domain..." : "+ Add keyword..."}
+                  placeholder={mode === 'keywords' ? "+ Add keyword..." : "+ Add domain..."}
                   value={newTargetInput}
                   onChange={(e) => setNewTargetInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTarget())}
@@ -248,6 +260,89 @@ export default function ComparisonView() {
               </ResponsiveContainer>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Mode: Technical SEO Site Audit Side-by-Side Comparison */}
+      {results.length > 0 && mode === 'audits' && (
+        <div className="p-6 rounded-3xl bg-white border border-sky-100 shadow-sm overflow-x-auto space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-sky-100">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-sky-600" />
+              <h3 className="font-bold text-slate-900 text-base">Technical SEO Health Score Comparison</h3>
+            </div>
+            <span className="text-xs px-2.5 py-0.5 bg-sky-100 text-sky-700 font-bold rounded-full">
+              Crawler Side-by-Side
+            </span>
+          </div>
+
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="border-b border-sky-100 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+                <th className="py-3 px-4">Audit Parameter</th>
+                {results.map((r, idx) => (
+                  <th key={r.domain} className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: TARGET_COLORS[idx] }}></span>
+                      <span className="font-bold text-slate-900 font-mono text-xs">{r.domain}</span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-sky-50">
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-700">SEO Health Score</td>
+                {results.map(r => (
+                  <td key={r.domain} className="py-3 px-4 font-bold text-sky-700 font-mono text-base">
+                    {r.health_score} / 100
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-700">Health Grade</td>
+                {results.map(r => (
+                  <td key={r.domain} className="py-3 px-4">
+                    <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-extrabold rounded-full font-mono text-xs">
+                      Grade {r.health_grade}
+                    </span>
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-700">Pages Crawled</td>
+                {results.map(r => (
+                  <td key={r.domain} className="py-3 px-4 font-mono font-semibold text-slate-800">
+                    {r.total_pages_crawled} pages
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-700">Critical Errors (404/500)</td>
+                {results.map(r => (
+                  <td key={r.domain} className="py-3 px-4 font-mono text-rose-600 font-bold">
+                    {r.issue_counts?.errors || 0}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-700">Warnings (Titles/H1s)</td>
+                {results.map(r => (
+                  <td key={r.domain} className="py-3 px-4 font-mono text-amber-600 font-semibold">
+                    {r.issue_counts?.warnings || 0}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-700">Notices (Canonicals/ALT)</td>
+                {results.map(r => (
+                  <td key={r.domain} className="py-3 px-4 font-mono text-sky-600 font-semibold">
+                    {r.issue_counts?.notices || 0}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
         </div>
       )}
 

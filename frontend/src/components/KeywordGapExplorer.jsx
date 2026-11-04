@@ -195,3 +195,4 @@ export default function KeywordGapExplorer({ keywordGap, primaryDomain = 'Your D
     </div>
   );
 }
+
