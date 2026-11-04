@@ -12,6 +12,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 PUBLIC_DIR = ROOT_DIR / "frontend" / "public"
 DOWNLOADS_DIR = ROOT_DIR / "downloads"
 LANDING_FILE = ROOT_DIR / "index.html"
+APP_DIR = ROOT_DIR / "app"
 
 # Ensure downloads directory exists
 DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
@@ -65,7 +66,8 @@ def read_root():
             "connectors": "/api/connectors/summary?domain={domain}",
             "settings": "/api/settings/keys",
             "download_portal": "/portal",
-            "landing_page": "/landing"
+            "landing_page": "/landing",
+            "web_portal": "/app/"
         }
     }
 
@@ -88,12 +90,23 @@ def serve_landing_page():
         return FileResponse(str(LANDING_FILE), media_type="text/html")
     raise HTTPException(status_code=404, detail="Landing page not found")
 
+@app.get("/web", include_in_schema=False)
+def serve_web_portal():
+    app_index = APP_DIR / "index.html"
+    if app_index.exists():
+        return FileResponse(str(app_index), media_type="text/html")
+    raise HTTPException(status_code=404, detail="Web application bundle not found")
+
 @app.get("/favicon.svg", include_in_schema=False)
 def serve_favicon():
     favicon = PUBLIC_DIR / "favicon.svg"
     if favicon.exists():
         return FileResponse(str(favicon), media_type="image/svg+xml")
     raise HTTPException(status_code=404, detail="Favicon not found")
+
+# Mount web portal application bundle
+if APP_DIR.exists():
+    app.mount("/app", StaticFiles(directory=str(APP_DIR), html=True), name="app")
 
 # Mount static file directories for downloads and public assets
 if PUBLIC_DIR.exists():

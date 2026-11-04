@@ -156,3 +156,12 @@ def test_fastapi_static_and_portal_serving():
     assert res_static.status_code == 200
     assert "OmniResearch PRO" in res_static.text
 
+    # Test web portal serving
+    res_web = client.get("/web")
+    assert res_web.status_code == 200
+    assert "OmniResearch PRO" in res_web.text
+
+    res_app = client.get("/app/")
+    assert res_app.status_code == 200
+    assert "OmniResearch PRO" in res_app.text
+
