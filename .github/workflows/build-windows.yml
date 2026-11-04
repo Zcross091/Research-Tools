@@ -49,15 +49,22 @@ jobs:
             frontend/release/*.exe.blockmap
           retention-days: 7
 
+      - name: Extract App Version
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./frontend/package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Publish Windows .EXE to GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: OmniResearch v1.0.${{ github.run_number }}
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: OmniResearch PRO v${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
           files: |
             frontend/release/*.exe
         env:

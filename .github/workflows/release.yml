@@ -36,25 +36,28 @@ jobs:
             find release-asset/ -name "*.apk"
           fi
 
+      - name: Extract App Version
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./frontend/package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.event.workflow_run.run_number || github.run_number }}
-          name: OmniResearch v1.0.${{ github.event.workflow_run.run_number || github.run_number }}
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: OmniResearch PRO v${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
           body: |
-            ## OmniResearch Official Signed Release 📱
+            ## OmniResearch PRO Release 📱💻
             
-            This APK is cryptographically signed with our permanent 28-year RSA certificate (valid until 2054).
+            Enterprise multi-channel market, competitor, keyword and site audit intelligence suite.
             
             ### ✨ In-Place Updates Guaranteed
-            - You can install this APK directly over any previous version without deleting or uninstalling old versions.
+            - Direct upgrade: signed with permanent release certificate.
             - All local data and configuration are preserved automatically.
-            
-            ### Direct Download:
-            - 📱 **Download Android App**: `OmniResearch-release.apk`
           files: |
             release-asset/OmniResearch-release.apk
         env:
