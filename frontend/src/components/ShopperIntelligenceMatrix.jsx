@@ -1,8 +1,32 @@
 import React from 'react';
-import { ShoppingCart, Search, ShoppingBag, Award, TrendingUp } from 'lucide-react';
+import { ShoppingCart, Search, ShoppingBag, Award, TrendingUp, Info } from 'lucide-react';
 
 export default function ShopperIntelligenceMatrix({ shopperData }) {
-  if (!shopperData || !shopperData.is_ecommerce_property) return null;
+  if (!shopperData || !shopperData.is_ecommerce_property) {
+    return (
+      <div className="p-6 rounded-3xl bg-white border border-sky-100 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-sky-100">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-slate-400" />
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">E-Commerce Shopper & Marketplace Intelligence</h3>
+              <p className="text-xs text-slate-500">Marketplace on-site queries, SKU category conversion rates, and brand shares</p>
+            </div>
+          </div>
+          <span className="px-3 py-1 bg-slate-100 text-slate-600 font-bold rounded-full text-xs border border-slate-200">
+            Property Not Applicable
+          </span>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-sky-50/50 border border-sky-100 text-xs text-slate-600 leading-relaxed flex items-start gap-3">
+          <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+          <p>
+            <strong>B2B / Agency Service Property:</strong> Shopper intelligence is calibrated exclusively for retail marketplaces (e.g., Amazon, Walmart) and direct-to-consumer e-commerce carts. This domain is classified as a service agency with no consumer shopping cart activity.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const {
     top_on_site_queries = [],

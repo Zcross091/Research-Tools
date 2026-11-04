@@ -70,6 +70,9 @@ def test_newly_launched_domain():
     assert res.is_newly_launched is True
     assert res.registration_date is not None
     assert res.monthly_history[0].visits == 0
+    assert res.shopper_intelligence.is_ecommerce_property is False
+    assert res.folder_segmentation.top_subpaths[0].path == "/services"
+    assert res.total_visits < 100
 
 def test_analyze_keyword():
     res = asyncio.run(analyze_keyword("artificial intelligence"))
