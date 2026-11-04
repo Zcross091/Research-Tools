@@ -124,3 +124,32 @@ def test_settings_and_keys():
     save_setting("dataforseo_login", "testuser@example.com")
     all_settings = get_all_settings()
     assert all_settings.get("dataforseo_login") == "testuser@example.com"
+
+def test_fastapi_static_and_portal_serving():
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    client = TestClient(app)
+    
+    # Test root endpoint
+    res_root = client.get("/")
+    assert res_root.status_code == 200
+    data = res_root.json()
+    assert data["status"] == "operational"
+    assert "download_portal" in data["endpoints"]
+
+    # Test health check
+    res_health = client.get("/health")
+    assert res_health.status_code == 200
+    assert res_health.json() == {"status": "ok"}
+
+    # Test download portal page serving
+    res_portal = client.get("/portal")
+    assert res_portal.status_code == 200
+    assert "OmniResearch PRO" in res_portal.text
+
+    # Test static mounted path
+    res_static = client.get("/static/download.html")
+    assert res_static.status_code == 200
+    assert "OmniResearch PRO" in res_static.text
+

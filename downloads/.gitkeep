@@ -1,0 +1,1 @@
+# Place production builds (.exe, .apk, .zip) here for direct FastAPI serving at /downloads/
