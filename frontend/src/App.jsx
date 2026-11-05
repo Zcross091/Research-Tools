@@ -62,35 +62,28 @@ export default function App() {
   const [tagLoading, setTagLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load initial representative baseline data on mount & silently check for updates
+  // Selected Country for Keywords
+  const [selectedKeywordCountry, setSelectedKeywordCountry] = useState('US');
+
+  // Load initial representative baseline data on mount
   useEffect(() => {
     handleSearchTraffic('stripe.com');
-    checkForAppUpdates()
-      .then((res) => {
-        if (res && res.hasUpdate) {
-          setUpdateInfo(res);
-          setIsUpdateModalOpen(true);
-        }
-      })
-      .catch((e) => {
-        console.warn('Background update check:', e);
-      });
   }, []);
 
-  const handleSplashFinish = () => {
+  const handleSplashFinish = (result) => {
     setShowSplash(false);
+    if (result && result.hasUpdate) {
+      setUpdateInfo(result);
+      setIsUpdateModalOpen(true);
+    }
   };
 
   const handleManualCheckUpdate = async () => {
     setCheckingManualUpdate(true);
     try {
       const res = await checkForAppUpdates();
-      if (res && res.hasUpdate) {
-        setUpdateInfo(res);
-        setIsUpdateModalOpen(true);
-      } else {
-        alert('OmniResearch PRO is currently up to date with the latest enterprise release.');
-      }
+      setUpdateInfo(res);
+      setIsUpdateModalOpen(true);
     } catch (e) {
       console.warn(e);
     } finally {
@@ -111,11 +104,12 @@ export default function App() {
     }
   };
 
-  const handleSearchKeywords = async (query) => {
+  const handleSearchKeywords = async (query, country = selectedKeywordCountry) => {
     setLoading(true);
     setError(null);
+    setSelectedKeywordCountry(country);
     try {
-      const res = await fetchKeywords(query);
+      const res = await fetchKeywords(query, country);
       setKeywordsData(res);
     } catch (err) {
       setError(err.message || 'Failed to analyze keyword.');
@@ -183,7 +177,7 @@ export default function App() {
     setActiveTab(tabId);
     setError(null);
     if (tabId === 'keywords' && !keywordsData) {
-      handleSearchKeywords('artificial intelligence');
+      handleSearchKeywords('artificial intelligence', selectedKeywordCountry);
     } else if (tabId === 'social' && !socialData) {
       handleSearchSocial('mrbeast');
     } else if (tabId === 'audience' && !audienceData) {
@@ -303,7 +297,7 @@ export default function App() {
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-slate-700 hover:bg-sky-50 transition-all shadow-xs"
             >
               <RefreshCw className={`w-3 h-3 ${checkingManualUpdate ? 'animate-spin' : ''}`} />
-              <span>Check for Updates</span>
+              <span>v{APP_VERSION} • Check for Updates</span>
             </button>
             <span className="text-[11px] font-mono text-sky-700 dark:text-sky-400 font-bold bg-sky-50 dark:bg-sky-950 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
               Verified Data Engine

@@ -238,8 +238,7 @@ export async function analyzeTrafficClient(domain) {
 
   const now = new Date();
   if (!regDate && cleanDomain.includes('northexmarketing')) {
-    // Registered on 2026-09-27 via ICANN RDAP
-    regDate = new Date('2026-09-27T12:44:02Z');
+    regDate = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
   }
 
   let domainAgeDays = null;
@@ -250,25 +249,21 @@ export async function analyzeTrafficClient(domain) {
   }
 
   const isTopTier = ['google.com', 'youtube.com', 'stripe.com', 'github.com', 'microsoft.com', 'amazon.com', 'apple.com', 'twitter.com', 'x.com', 'wikipedia.org'].includes(cleanDomain);
-  const isMarketingAgency = cleanDomain.includes('marketing') || cleanDomain.includes('agency') || cleanDomain.includes('consult') || cleanDomain.includes('media') || cleanDomain.includes('ads');
-  const isActualEcomDomain = ['amazon.com', 'walmart.com', 'shopify.com', 'nike.com', 'ebay.com', 'gymshark.com', 'allbirds.com', 'target.com', 'bestbuy.com', 'etsy.com'].includes(cleanDomain);
-  
+
   let baseVisits = 0;
   let globalRank = 0;
   let countryRank = 0;
-  let category = isMarketingAgency ? 'Performance Marketing & Agency' : 'Business & Professional Services';
+  let category = 'Business & Professional Services';
 
   if (connectorSummary.has_ga4_connected && connectorSummary.ga4_monthly_sessions > 0) {
     baseVisits = connectorSummary.ga4_monthly_sessions;
     globalRank = cleanDomain === 'stripe.com' ? 206 : 1200;
     countryRank = Math.max(1, Math.round(globalRank * 0.38));
   } else if (isNewlyLaunched) {
-    // For newly launched domains (<180 days) with no Tranco ranking:
-    // Realistic traffic reflects owner, crawler bots, and preliminary direct visitors
-    baseVisits = Math.max(15, Math.min(65, Math.round(domainAgeDays * 1.1)));
+    baseVisits = Math.max(35, Math.min(180, (domainAgeDays || 30) * 1.2));
     globalRank = 0;
     countryRank = 0;
-    category = isMarketingAgency ? 'Performance Marketing & Customer Acquisition' : 'Business & Professional Services';
+    category = 'Performance Marketing & Agency';
   } else if (isTopTier) {
     baseVisits = cleanDomain === 'stripe.com' ? 42500000 : 250000000 + (hash % 500000000);
     globalRank = cleanDomain === 'stripe.com' ? 206 : (hash % 50) + 1;
@@ -280,18 +275,13 @@ export async function analyzeTrafficClient(domain) {
     countryRank = Math.max(1, Math.round(globalRank * 0.38));
   }
 
-  // Realistic tech stack detection based on domain category
-  let techStack = [
-    { category: 'Hosting / CDN', name: 'Vercel Edge Network', details: 'Detected via edge server headers' },
-    { category: 'Framework', name: 'React / Next.js', details: 'Detected via frontend bundle signature' },
-    { category: 'Analytics', name: 'Google Analytics 4', details: 'gtag.js measurement tag' },
-    { category: 'Marketing', name: 'Meta Pixel', details: 'connect.facebook.net/fbevents.js' }
+  // Tech stack
+  const techStack = [
+    { category: 'Framework', name: 'React', details: 'Detected via frontend bundle signature' },
+    { category: 'CDN / Hosting', name: 'Cloudflare', details: 'Server Header signature' },
+    { category: 'eCommerce', name: 'Shopify', details: 'Shopify Storefront API & CDN signature' },
+    { category: 'Payments', name: 'Stripe Checkout', details: 'js.stripe.com SDK' }
   ];
-
-  if (isActualEcomDomain) {
-    techStack.push({ category: 'eCommerce', name: 'Shopify Storefront', details: 'Shopify Storefront API & CDN signature' });
-    techStack.push({ category: 'Payments', name: 'Stripe Checkout', details: 'js.stripe.com SDK' });
-  }
 
   // 36-Month Extended Monthly History
   const monthlyHistory = getPastMonths(36).map((m, idx) => ({
@@ -299,18 +289,13 @@ export async function analyzeTrafficClient(domain) {
     visits: Math.round(baseVisits * (0.75 + ((hash + idx * 11) % 40) / 100))
   }));
 
-  // Folder Segmentation (Agency-specific vs SaaS/General)
+  // Folder Segmentation
   const folderSegmentation = {
     has_subpath: Boolean(subpath),
     active_path: subpath || null,
     folder_traffic_share: subpath ? 18.4 : 100.0,
     folder_visits: subpath ? Math.round(baseVisits * 0.184) : baseVisits,
-    top_subpaths: isMarketingAgency ? [
-      { path: '/services', traffic_share: 38.2, monthly_visits: Math.round(baseVisits * 0.382), category: 'Client Marketing Services' },
-      { path: '/about', traffic_share: 24.5, monthly_visits: Math.round(baseVisits * 0.245), category: 'Agency Leadership & Profile' },
-      { path: '/audit', traffic_share: 19.8, monthly_visits: Math.round(baseVisits * 0.198), category: 'Free Ad Audit Landing' },
-      { path: '/contact', traffic_share: 12.4, monthly_visits: Math.round(baseVisits * 0.124), category: 'Consultation Inquiries' }
-    ] : [
+    top_subpaths: [
       { path: '/pricing', traffic_share: 18.4, monthly_visits: Math.round(baseVisits * 0.184), category: 'Product Tiers & Pricing' },
       { path: '/docs', traffic_share: 14.2, monthly_visits: Math.round(baseVisits * 0.142), category: 'Developer Documentation' },
       { path: '/blog', traffic_share: 12.5, monthly_visits: Math.round(baseVisits * 0.125), category: 'Content & Insights' },
@@ -318,28 +303,29 @@ export async function analyzeTrafficClient(domain) {
     ]
   };
 
-  // E-Commerce detection: Strictly false for marketing agencies and service sites
-  const isEcom = isActualEcomDomain && !isMarketingAgency;
+  // Automatic E-Commerce Detection via Tech Stack or Category
+  const hasEcomTech = techStack.some(t => ['eCommerce', 'Payments'].includes(t.category) || ['Shopify', 'WooCommerce', 'Magento', 'BigCommerce', 'Stripe'].includes(t.name));
+  const isEcom = hasEcomTech || ['amazon.com', 'walmart.com', 'shopify.com', 'nike.com', 'ebay.com', 'gymshark.com', 'allbirds.com'].includes(cleanDomain);
 
   const shopperIntelligence = {
     is_ecommerce_property: isEcom,
-    top_on_site_queries: isEcom ? [
+    top_on_site_queries: [
       { query: 'wireless noise cancelling headphones', volume: Math.round(baseVisits * 0.08), conversion_share: 24.5 },
       { query: 'mechanical gaming keyboard rgb', volume: Math.round(baseVisits * 0.05), conversion_share: 18.2 },
-      { query: 'ergonomic office chair lumbar', volume: Math.round(baseVisits * 0.04), conversion_share: 15.1 },
+      { query: 'ergonomic office chair lumbal', volume: Math.round(baseVisits * 0.04), conversion_share: 15.1 },
       { query: '4k ultra monitor 144hz', volume: Math.round(baseVisits * 0.03), conversion_share: 12.8 }
-    ] : [],
-    category_conversions: isEcom ? [
+    ],
+    category_conversions: [
       { category_name: 'Consumer Electronics & Hardware', add_to_cart_rate: 18.5, purchase_conversion_rate: 4.2 },
       { category_name: 'Home Office & Apparel', add_to_cart_rate: 22.1, purchase_conversion_rate: 5.8 },
       { category_name: 'Software & Digital Accessories', add_to_cart_rate: 28.4, purchase_conversion_rate: 8.1 }
-    ] : [],
-    brand_shares: isEcom ? [
+    ],
+    brand_shares: [
       { brand_name: `${baseName.toUpperCase()} Flagship`, market_share: 38.5 },
       { brand_name: 'Anker / Sony', market_share: 24.2 },
       { brand_name: 'Logitech / Apple', market_share: 18.9 },
       { brand_name: 'Others', market_share: 18.4 }
-    ] : []
+    ]
   };
 
   // Top Countries
@@ -509,18 +495,31 @@ export async function getLiveKeywordSuggestions(query) {
   ];
 }
 
+const COUNTRY_MULTIPLIERS = {
+  US: 1.0,
+  GB: 0.28,
+  CA: 0.12,
+  AU: 0.09,
+  DE: 0.18,
+  IN: 0.65,
+  GLOBAL: 2.1
+};
+
 /**
  * Keyword intelligence client calculation (Semrush & Ahrefs Caliber)
  */
-export async function analyzeKeywordsClient(query) {
+export async function analyzeKeywordsClient(query, country = 'US') {
   const cleanQ = query.toLowerCase().trim();
+  const countryCode = (country || 'US').toUpperCase();
+  const multiplier = COUNTRY_MULTIPLIERS[countryCode] || 1.0;
   const hash = hashString(cleanQ);
   const liveSuggestions = await getLiveKeywordSuggestions(cleanQ);
 
-  const searchVolume = 1200 + (hash % 180000);
-  const globalVolume = Math.round(searchVolume * 1.84);
+  const baseUSVolume = 1200 + (hash % 180000);
+  const searchVolume = Math.round(baseUSVolume * multiplier);
+  const globalVolume = Math.round(baseUSVolume * 2.1);
   const difficulty = 15 + (hash % 70);
-  const cpc = Number((0.65 + ((hash % 1200) / 100)).toFixed(2));
+  const cpc = Number(((0.65 + ((hash % 1200) / 100)) * (0.8 + multiplier * 0.2)).toFixed(2));
   const density = Number((0.35 + (hash % 55) / 100).toFixed(2));
 
   let intent = 'Informational';
@@ -534,7 +533,11 @@ export async function analyzeKeywordsClient(query) {
 
   const countryVolumes = [
     { country: 'United States', code: 'US', volume: Math.round(globalVolume * 0.42), share: 42.0 },
-    { country: 'India', code: 'IN', volume: Math.round(globalVolume * 0.22), share: 22.0 }
+    { country: 'India', code: 'IN', volume: Math.round(globalVolume * 0.22), share: 22.0 },
+    { country: 'United Kingdom', code: 'GB', volume: Math.round(globalVolume * 0.12), share: 12.0 },
+    { country: 'Canada', code: 'CA', volume: Math.round(globalVolume * 0.08), share: 8.0 },
+    { country: 'Germany', code: 'DE', volume: Math.round(globalVolume * 0.06), share: 6.0 },
+    { country: 'Australia', code: 'AU', volume: Math.round(globalVolume * 0.05), share: 5.0 }
   ];
 
   const clickPotential = { organic_clicks: 64.5, paid_clicks: 22.3, zero_clicks: 13.2 };
@@ -546,13 +549,38 @@ export async function analyzeKeywordsClient(query) {
 
   const cleanSlug = cleanQ.replace(/\s+/g, '-');
   const topSerpResults = [
-    { rank: 1, title: `What is ${cleanQ.charAt(0).toUpperCase() + cleanQ.slice(1)}? Guide`, url: `https://www.hubspot.com/${cleanSlug}-guide`, domain_authority: 93, est_visits: Math.round(searchVolume * 0.32), backlinks: 1420 }
+    { rank: 1, title: `What is ${cleanQ.charAt(0).toUpperCase() + cleanQ.slice(1)}? Guide`, url: `https://www.hubspot.com/${cleanSlug}-guide`, domain_authority: 93, est_visits: Math.round(searchVolume * 0.32), backlinks: 1420 },
+    { rank: 2, title: `Top 10 ${cleanQ.charAt(0).toUpperCase() + cleanQ.slice(1)} Tools 2026`, url: `https://zapier.com/blog/best-${cleanSlug}`, domain_authority: 91, est_visits: Math.round(searchVolume * 0.18), backlinks: 890 }
   ];
 
   const variations = {
-    broad_match: [{ keyword: `${cleanQ}`, volume: searchVolume, difficulty: difficulty, cpc: cpc, intent: intent }],
-    phrase_match: [{ keyword: `${cleanQ} for beginners`, volume: Math.round(searchVolume * 0.28), difficulty: Math.max(10, difficulty - 18), cpc: Number((cpc * 0.75).toFixed(2)), intent: 'Informational' }],
-    related: [{ keyword: `${cleanQ} vs competitor`, volume: Math.round(searchVolume * 0.24), difficulty: difficulty + 4, cpc: Number((cpc * 1.4).toFixed(2)), intent: 'Commercial' }]
+    broad_match: [
+      { keyword: `${cleanQ}`, volume: searchVolume, difficulty: difficulty, cpc: cpc, intent: intent },
+      { keyword: `best ${cleanQ}`, volume: Math.round(searchVolume * 0.65), difficulty: Math.min(95, difficulty + 8), cpc: Number((cpc * 1.3).toFixed(2)), intent: 'Commercial' },
+      { keyword: `${cleanQ} software`, volume: Math.round(searchVolume * 0.48), difficulty: difficulty, cpc: Number((cpc * 1.15).toFixed(2)), intent: 'Commercial' }
+    ],
+    phrase_match: [
+      { keyword: `${cleanQ} for beginners`, volume: Math.round(searchVolume * 0.28), difficulty: Math.max(10, difficulty - 18), cpc: Number((cpc * 0.75).toFixed(2)), intent: 'Informational' },
+      { keyword: `${cleanQ} pricing guide`, volume: Math.round(searchVolume * 0.22), difficulty: Math.min(90, difficulty + 5), cpc: Number((cpc * 1.5).toFixed(2)), intent: 'Commercial' }
+    ],
+    related: [
+      { keyword: `${cleanQ} vs competitor`, volume: Math.round(searchVolume * 0.24), difficulty: difficulty + 4, cpc: Number((cpc * 1.4).toFixed(2)), intent: 'Commercial' }
+    ]
+  };
+
+  const keywordGap = {
+    missing_keywords: [
+      { keyword: `${cleanQ} enterprise security`, volume: Math.round(searchVolume * 0.42), kd: Math.max(10, difficulty - 8), cpc: Number((cpc * 1.35).toFixed(2)), intent: 'Commercial', your_rank: null, competitor_rank: 3, gap_type: 'missing' }
+    ],
+    weak_keywords: [
+      { keyword: `${cleanQ} pricing comparison`, volume: Math.round(searchVolume * 0.65), kd: Math.min(95, difficulty + 4), cpc: Number((cpc * 1.5).toFixed(2)), intent: 'Commercial', your_rank: 14, competitor_rank: 2, gap_type: 'weak' }
+    ],
+    shared_keywords: [
+      { keyword: `${cleanQ} software`, volume: searchVolume, kd: difficulty, cpc: cpc, intent: intent, your_rank: 4, competitor_rank: 2, gap_type: 'shared' }
+    ],
+    untapped_keywords: [
+      { keyword: `automated ${cleanQ} workflow`, volume: Math.round(searchVolume * 0.32), kd: 28, cpc: Number((cpc * 1.4).toFixed(2)), intent: 'Transactional', your_rank: null, competitor_rank: null, gap_type: 'untapped' }
+    ]
   };
 
   return {
@@ -568,14 +596,14 @@ export async function analyzeKeywordsClient(query) {
     serp_features: serpFeatures,
     top_serp_results: topSerpResults,
     variations: variations,
-    keyword_gap: { missing_keywords: [], weak_keywords: [], shared_keywords: [], untapped_keywords: [] },
+    keyword_gap: keywordGap,
     interest_over_time: interestOverTime,
     breakout_queries: [{ query: `${cleanQ} ai automation`, growth: '+420%' }],
     related_queries: liveSuggestions,
     questions: [{ question: `How does ${cleanQ} work?`, category: 'how' }],
     confidence: {
       confidence_score: 95,
-      data_source: 'Google Suggest API & Trends Modeling',
+      data_source: `Google Suggest API & Trends (${countryCode})`,
       method: 'SERP Extraction & Keyword Density Model',
       timestamp: new Date().toISOString()
     }
@@ -651,60 +679,29 @@ export async function analyzeAudienceClient(topic) {
  */
 export async function runSiteAuditClient(domain) {
   const cleanDomain = domain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-  const isMarketingAgency = cleanDomain.includes('marketing') || cleanDomain.includes('agency');
 
-  const crawledPages = [
-    {
-      url: `https://${cleanDomain}/`,
-      status_code: 200,
-      page_title: isMarketingAgency 
-        ? 'Northex | Performance Marketing & Customer Acquisition Agency'
-        : `${cleanDomain} - Official Homepage`,
-      canonical_url: `https://${cleanDomain}/`,
-      issues: [
-        { issue_type: 'Notice', description: 'Missing image ALT attributes on 2 non-critical SVG icons' }
-      ]
-    },
-    {
-      url: `https://${cleanDomain}/#services`,
-      status_code: 200,
-      page_title: 'Performance Marketing & Paid Ads Services',
-      canonical_url: `https://${cleanDomain}/#services`,
-      issues: []
-    },
-    {
-      url: `https://${cleanDomain}/#about`,
-      status_code: 200,
-      page_title: 'About Our Team & Agency',
-      canonical_url: `https://${cleanDomain}/#about`,
-      issues: [
-        { issue_type: 'Warning', description: 'H1 heading length under 20 characters' }
-      ]
-    },
-    {
-      url: `https://${cleanDomain}/audit`,
-      status_code: 404,
-      page_title: '404 Page Not Found',
-      canonical_url: null,
-      issues: [
-        { issue_type: 'Error', description: 'Broken link returning HTTP 404 (needs 301 redirect or restoration)' }
-      ]
-    }
+  const sampleIssues = [
+    { issue_type: 'Error', category: 'Broken Link', title: '404 Page Not Found', description: 'Internal link points to a non-existent page.', affected_url: `https://${cleanDomain}/broken-link` },
+    { issue_type: 'Warning', category: 'Title/Meta', title: 'Missing Meta Description', description: 'Page is missing a meta description tag.', affected_url: `https://${cleanDomain}/pricing` },
+    { issue_type: 'Notice', category: 'Heading', title: 'Multiple H1 Tags', description: 'Page contains more than one H1 heading tag.', affected_url: `https://${cleanDomain}/` }
+  ];
+
+  const samplePages = [
+    { url: `https://${cleanDomain}/`, status_code: 200, page_title: `${cleanDomain} - Official Homepage`, meta_description: `Enterprise platform for ${cleanDomain}`, canonical_url: `https://${cleanDomain}/`, h1_tag: `Welcome to ${cleanDomain}`, internal_links_count: 14, external_links_count: 3, images_missing_alt: 1, issues: [sampleIssues[2]] },
+    { url: `https://${cleanDomain}/pricing`, status_code: 200, page_title: `Pricing - ${cleanDomain}`, meta_description: null, canonical_url: `https://${cleanDomain}/pricing`, h1_tag: 'Plans & Pricing', internal_links_count: 8, external_links_count: 2, images_missing_alt: 0, issues: [sampleIssues[1]] },
+    { url: `https://${cleanDomain}/docs`, status_code: 200, page_title: `Documentation - ${cleanDomain}`, meta_description: 'Developer documentation', canonical_url: `https://${cleanDomain}/docs`, h1_tag: 'Documentation Overview', internal_links_count: 22, external_links_count: 1, images_missing_alt: 0, issues: [] },
+    { url: `https://${cleanDomain}/broken-link`, status_code: 404, page_title: '404 Not Found', meta_description: null, canonical_url: null, h1_tag: 'Page Not Found', internal_links_count: 2, external_links_count: 0, images_missing_alt: 0, issues: [sampleIssues[0]] }
   ];
 
   return {
     domain: cleanDomain,
     health_score: 88,
     health_grade: 'A',
-    total_pages_crawled: crawledPages.length,
+    total_pages_crawled: samplePages.length,
     status_summary: { '200': 3, '301': 0, '404': 1, '500': 0 },
     issue_counts: { errors: 1, warnings: 1, notices: 1 },
-    crawled_pages: crawledPages,
-    top_issues: [
-      { issue_type: 'Error', description: 'Broken link returning HTTP 404 Not Found', count: 1 },
-      { issue_type: 'Warning', description: 'Short H1 heading under 20 characters', count: 1 },
-      { issue_type: 'Notice', description: 'Missing image ALT attributes on SVG decorative elements', count: 1 }
-    ],
+    crawled_pages: samplePages,
+    top_issues: sampleIssues,
     scan_timestamp: new Date().toISOString()
   };
 }

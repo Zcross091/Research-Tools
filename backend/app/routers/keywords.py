@@ -1,14 +1,17 @@
 from fastapi import APIRouter, Query, HTTPException
-from typing import List
+from typing import List, Optional
 from app.models.schemas import KeywordResponse
 from app.services.keyword_service import analyze_keyword, fetch_live_google_suggestions
 
 router = APIRouter(prefix="/api/keywords", tags=["Keyword & Trend Intelligence"])
 
 @router.get("/analyze", response_model=KeywordResponse)
-async def analyze_keyword_endpoint(q: str = Query(..., description="Target keyword or search phrase")):
+async def analyze_keyword_endpoint(
+    q: str = Query(..., description="Target keyword or search phrase"),
+    country: Optional[str] = Query("US", description="Country code (US, GB, CA, AU, DE, IN, GLOBAL)")
+):
     try:
-        return await analyze_keyword(q)
+        return await analyze_keyword(q, country=country or "US")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to analyze keyword: {str(e)}")
 
@@ -18,4 +21,3 @@ async def get_suggestions(q: str = Query(..., description="Query prefix")):
         return await fetch_live_google_suggestions(q)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch suggestions: {str(e)}")
-
