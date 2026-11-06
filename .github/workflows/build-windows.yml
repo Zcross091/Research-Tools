@@ -21,32 +21,33 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: frontend/package.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Frontend Dependencies
-        run: |
-          cd frontend
-          npm install
+        working-directory: frontend
+        run: npm ci
 
       - name: Build Web Application
-        run: |
-          cd frontend
-          npm run build
+        working-directory: frontend
+        run: npm run build
 
-      - name: Package Windows .EXE
-        run: |
-          cd frontend
-          npx electron-builder --win --x64
+      - name: Package Windows .EXE (Installer + Portable)
+        working-directory: frontend
+        run: npx electron-builder --win --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Windows Executable Artifact
+      - name: List Release Output
+        working-directory: frontend
+        shell: bash
+        run: ls -lh release/ || true
+
+      - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-release
           path: |
             frontend/release/*.exe
-            frontend/release/*.exe.blockmap
           retention-days: 7
 
       - name: Extract App Version
@@ -58,16 +59,14 @@ jobs:
 
       - name: Publish Windows .EXE to GitHub Release
         uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
-          name: OmniResearch PRO v${{ steps.get_version.outputs.version }}
+          name: OmniResearch v${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: false
+          fail_on_unmatched_files: false
           files: |
             frontend/release/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
